@@ -1,0 +1,89 @@
+{
+  "name": "medical-pos-system",
+  "version": "1.0.0",
+  "homepage": "https://example.com",
+  "private": true,
+  "description": "Medical Store POS (Angular + Node.js + SQLite + Electron) - accessible and reliable.",
+  "main": "electron/main.js",
+  "author": {
+    "name": "Waqar Nawaz",
+    "email": "waqar@example.com"
+  },
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.18.0"
+  },
+  "scripts": {
+    "init-db": "node backend/scripts/init-db.js",
+    "dev:renderer": "ng serve renderer --host 0.0.0.0 --port 4200",
+    "dev:server": "cross-env NODE_ENV=development nodemon --inspect backend/src/server.js",
+    "dev:electron": "wait-on http://localhost:4200 && cross-env NODE_ENV=development electron .",
+    "dev": "concurrently -k -n \"ANGULAR,ELECTRON\" -c \"green,magenta\" \"npm:dev:renderer\" \"npm:dev:electron\"",
+    "server": "node backend/src/server.js",
+    "build": "ng build renderer --configuration production --base-href ./",
+    "start": "node scripts/start-electron.js",
+    "build-win": "npm run build && electron-builder -w --x64"
+  },
+  "dependencies": {
+    "@angular-devkit/build-angular": "^17.3.3",
+    "@angular/animations": "^17.3.12",
+    "@angular/cdk": "^17.3.10",
+    "@angular/cli": "^17.3.3",
+    "@angular/common": "^17.3.0",
+    "@angular/compiler": "^17.3.0",
+    "@angular/compiler-cli": "^17.3.0",
+    "@angular/core": "^17.3.0",
+    "@angular/forms": "^17.3.0",
+    "@angular/material": "^17.3.10",
+    "@angular/platform-browser": "^17.3.0",
+    "@angular/platform-browser-dynamic": "^17.3.0",
+    "@angular/router": "^17.3.0",
+    "bcryptjs": "^2.4.3",
+    "better-sqlite3": "^9.4.3",
+    "bootstrap": "^5.3.8",
+    "chart.js": "^4.4.2",
+    "compression": "^1.7.4",
+    "concurrently": "^8.2.2",
+    "cors": "^2.8.5",
+    "cross-env": "^7.0.3",
+    "dayjs": "^1.11.10",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "helmet": "^7.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "nanoid": "^3.3.11",
+    "ng2-charts": "^5.0.4",
+    "node-cron": "^3.0.3",
+    "nodemon": "^3.1.0",
+    "pino": "^9.0.0",
+    "pino-http": "^10.0.0",
+    "rxjs": "^7.8.1",
+    "tslib": "^2.6.2",
+    "wait-on": "^7.2.0",
+    "zod": "^3.23.8",
+    "zone.js": "^0.14.4"
+  },
+  "build": {
+    "appId": "com.medpos.app",
+    "productName": "Medical POS",
+    "files": [
+      "dist/**",
+      "electron/**",
+      "backend/**",
+      "scripts/**",
+      "package.json"
+    ],
+    "asar": true,
+    "asarUnpack": [
+      "backend/**"
+    ],
+    "directories": {
+      "output": "release"
+    }
+  },
+  "devDependencies": {
+    "electron": "^29.1.6",
+    "electron-builder": "^24.13.3",
+    "typescript": "^5.4.5"
+  }
+}

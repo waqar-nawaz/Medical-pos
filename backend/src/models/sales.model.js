@@ -1,0 +1,708 @@
+// /**
+//  * sales.model.js — All features: new customer, balance, discounts, packaging, edit bill
+//  */
+// const { getDb } = require('../config/db');
+// const { nanoid } = require('nanoid');
+
+// function list({ from, to, q = '', limit = 50, offset = 0 }) {
+//   const db = getDb();
+//   const clauses = [];
+//   const params = [];
+//   if (from) { clauses.push('s.createdAt >= ?'); params.push(from); }
+//   if (to)   { clauses.push('s.createdAt <= ?'); params.push(to + 'T23:59:59.999Z'); }
+//   const qq = String(q || '').trim();
+//   if (qq) { clauses.push('(s.invoiceNo LIKE ? OR c.name LIKE ?)'); params.push(`%${qq}%`, `%${qq}%`); }
+//   const where = clauses.length ? `WHERE ${clauses.join(' AND ')}` : '';
+//   return db.prepare(`
+//     SELECT s.*, c.name AS customerName, c.phone AS customerPhone
+//     FROM sales s LEFT JOIN customers c ON c.id = s.customerId
+//     ${where} ORDER BY s.createdAt DESC LIMIT ? OFFSET ?
+//   `).all(...params, limit, offset);
+// }
+
+// function getById(id) {
+//   const db = getDb();
+//   const sale = db.prepare(`
+//     SELECT s.*, c.name AS customerName, c.phone AS customerPhone, c.balance AS customerBalance
+//     FROM sales s LEFT JOIN customers c ON c.id = s.customerId WHERE s.id = ?
+//   `).get(id);
+//   if (!sale) return null;
+//   const items = db.prepare(`
+//     SELECT si.*, p.name AS productName, p.barcode, p.unitsPerStrip, p.stripsPerBox
+//     FROM sale_items si JOIN products p ON p.id = si.productId
+//     WHERE si.saleId = ? ORDER BY si.id ASC
+//   `).all(id);
+//   return { ...sale, items };
+// }
+
+// function create({ userId, customerId = null, isNewCustomer = false, customerName = null,
+//   customerPhone = null, paymentMethod = 'CASH', items = [], discount = 0,
+//   billDiscount = 0, amountPaid = null }) {
+//   const db = getDb();
+//   if (!Array.isArray(items) || items.length === 0) throw new Error('No items');
+
+//   return db.transaction(() => {
+//     const now = new Date().toISOString();
+//     const invoiceNo = `INV-${day(now)}-${nanoid(6).toUpperCase()}`;
+
+//     // 1. Resolve / create customer
+//     let resolvedId = customerId || null;
+//     if (isNewCustomer && customerName) {
+//       let existing = null;
+//       if (customerPhone) existing = db.prepare('SELECT id FROM customers WHERE phone=? LIMIT 1').get(customerPhone);
+//       if (!existing) existing = db.prepare('SELECT id FROM customers WHERE name=? LIMIT 1').get(customerName);
+//       if (existing) {
+//         resolvedId = existing.id;
+//       } else {
+//         const cols = db.prepare("PRAGMA table_info('customers')").all().map(r => r.name);
+//         const hasBalance = cols.includes('balance');
+//         const sql = hasBalance
+//           ? 'INSERT INTO customers (name,phone,email,address,loyaltyPoints,balance,createdAt,updatedAt) VALUES (?,?,NULL,NULL,0,0,?,?)'
+//           : 'INSERT INTO customers (name,phone,email,address,loyaltyPoints,createdAt,updatedAt) VALUES (?,?,NULL,NULL,0,?,?)';
+//         const args = hasBalance ? [customerName, customerPhone||null, now, now] : [customerName, customerPhone||null, now, now];
+//         const info = db.prepare(sql).run(...args);
+//         resolvedId = info.lastInsertRowid;
+//       }
+//     }
+
+//     // 2. Compute totals
+//     let subTotal = 0, gstTotal = 0, totalProdDiscAmt = 0;
+//     const processed = items.map(it => {
+//       const p = db.prepare('SELECT * FROM products WHERE id=?').get(it.productId);
+//       if (!p || p.isActive === 0) throw new Error('Invalid product');
+//       const qty      = Number(it.qty || 0);
+//       if (qty <= 0) throw new Error('Invalid quantity');
+//       if (p.stockQty < qty) throw new Error(`Insufficient stock for ${p.name}`);
+//       const price    = Number(it.price ?? p.price);
+//       const pDisc    = Number(it.productDiscount ?? p.productDiscount ?? 0);
+//       const gstRate  = Number(it.gstRate ?? p.gstRate ?? 0);
+//       const packUnit = it.packagingUnit || p.packagingUnit || 'unit';
+//       const lineBase = price * qty;
+//       const discAmt  = lineBase * (pDisc / 100);
+//       const afterDisc= lineBase - discAmt;
+//       const gstAmt   = afterDisc * (gstRate / 100);
+//       const lineTotal= afterDisc + gstAmt;
+//       subTotal += lineBase; totalProdDiscAmt += discAmt; gstTotal += gstAmt;
+//       return { p, qty, price, pDisc, discAmt, gstRate, gstAmt, lineTotal, packUnit };
+//     });
+
+//     const afterProdDisc  = subTotal - totalProdDiscAmt + gstTotal;
+//     const billDiscPct    = Math.max(0, Math.min(100, Number(billDiscount || 0)));
+//     const billDiscAmt    = afterProdDisc * (billDiscPct / 100);
+//     const flatDiscount   = Math.max(0, Number(discount || 0));
+//     const grandTotal     = Math.max(0, afterProdDisc - billDiscAmt - flatDiscount);
+
+//     const paid       = amountPaid !== null ? Math.max(0, Number(amountPaid)) : grandTotal;
+//     const balanceDue = Math.max(0, grandTotal - paid);
+
+//     let prevBalance = 0;
+//     if (resolvedId) {
+//       const cust = db.prepare('SELECT balance FROM customers WHERE id=?').get(resolvedId);
+//       prevBalance = cust ? Number(cust.balance || 0) : 0;
+//     }
+
+//     // Check which columns exist in sales table
+//     const saleCols = db.prepare("PRAGMA table_info('sales')").all().map(r => r.name);
+//     const hasNewSaleCols = saleCols.includes('amountPaid');
+
+//     let saleId;
+//     if (hasNewSaleCols) {
+//       const saleInfo = db.prepare(`
+//         INSERT INTO sales (invoiceNo,userId,customerId,paymentMethod,subTotal,gstTotal,discount,billDiscount,grandTotal,amountPaid,balanceDue,prevBalance,status,createdAt,updatedAt,totalItems)
+//         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,'COMPLETED',?,?,?)
+//       `).run(invoiceNo, userId, resolvedId, paymentMethod, subTotal, gstTotal,
+//              totalProdDiscAmt + flatDiscount, billDiscAmt, grandTotal, paid, balanceDue, prevBalance,
+//              now, now, items.length);
+//       saleId = saleInfo.lastInsertRowid;
+//     } else {
+//       const saleInfo = db.prepare(`
+//         INSERT INTO sales (invoiceNo,userId,customerId,paymentMethod,subTotal,gstTotal,discount,grandTotal,status,createdAt,updatedAt,totalItems)
+//         VALUES (?,?,?,?,?,?,?,?,'COMPLETED',?,?,?)
+//       `).run(invoiceNo, userId, resolvedId, paymentMethod, subTotal, gstTotal,
+//              totalProdDiscAmt + flatDiscount, grandTotal, now, now, items.length);
+//       saleId = saleInfo.lastInsertRowid;
+//     }
+
+//     // 3. Insert items + stock
+//     const siCols = db.prepare("PRAGMA table_info('sale_items')").all().map(r => r.name);
+//     const hasExtItemCols = siCols.includes('productDiscount');
+//     const itemStmt = hasExtItemCols
+//       ? db.prepare('INSERT INTO sale_items (saleId,productId,qty,price,productDiscount,discountAmount,gstRate,gstAmount,lineTotal,packagingUnit) VALUES (?,?,?,?,?,?,?,?,?,?)')
+//       : db.prepare('INSERT INTO sale_items (saleId,productId,qty,price,gstRate,gstAmount,lineTotal) VALUES (?,?,?,?,?,?,?)');
+//     const stockStmt = db.prepare('UPDATE products SET stockQty=stockQty-?, updatedAt=? WHERE id=?');
+
+//     for (const it of processed) {
+//       if (hasExtItemCols) {
+//         itemStmt.run(saleId, it.p.id, it.qty, it.price, it.pDisc, it.discAmt, it.gstRate, it.gstAmt, it.lineTotal, it.packUnit);
+//       } else {
+//         itemStmt.run(saleId, it.p.id, it.qty, it.price, it.gstRate, it.gstAmt, it.lineTotal);
+//       }
+//       stockStmt.run(it.qty, now, it.p.id);
+//     }
+
+//     // 4. Customer balance + ledger
+//     if (resolvedId) {
+//       const newBalance = prevBalance + balanceDue;
+//       const custCols = db.prepare("PRAGMA table_info('customers')").all().map(r => r.name);
+//       if (custCols.includes('balance')) {
+//         db.prepare('UPDATE customers SET balance=?, loyaltyPoints=loyaltyPoints+?, updatedAt=? WHERE id=?')
+//           .run(newBalance, Math.floor(grandTotal / 100), now, resolvedId);
+//         const hasLedger = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='customer_ledger'").get();
+//         if (hasLedger) {
+//           db.prepare('INSERT INTO customer_ledger (customerId,billId,type,debit,credit,balance,note,createdAt) VALUES (?,?,?,?,?,?,?,?)')
+//             .run(resolvedId, saleId, 'SALE', grandTotal, paid, newBalance, `Invoice ${invoiceNo}`, now);
+//         }
+//       } else {
+//         db.prepare('UPDATE customers SET loyaltyPoints=loyaltyPoints+?, updatedAt=? WHERE id=?')
+//           .run(Math.floor(grandTotal / 100), now, resolvedId);
+//       }
+//     }
+
+//     return getById(saleId);
+//   })();
+// }
+
+// function edit(saleId, { items = [], billDiscount = 0, amountPaid = null }) {
+//   const db = getDb();
+//   return db.transaction(() => {
+//     const now = new Date().toISOString();
+//     const orig = getById(saleId);
+//     if (!orig) throw new Error('Sale not found');
+//     if (orig.status === 'VOIDED') throw new Error('Cannot edit a voided sale');
+
+//     // Restore stock
+//     for (const oi of orig.items) {
+//       db.prepare('UPDATE products SET stockQty=stockQty+?, updatedAt=? WHERE id=?').run(oi.qty, now, oi.productId);
+//     }
+//     db.prepare('DELETE FROM sale_items WHERE saleId=?').run(saleId);
+
+//     let subTotal = 0, gstTotal = 0, totalProdDiscAmt = 0;
+//     const processed = items.map(it => {
+//       const p = db.prepare('SELECT * FROM products WHERE id=?').get(it.productId);
+//       if (!p) throw new Error('Invalid product');
+//       const qty      = Math.max(0, Number(it.qty || 0));
+//       const price    = Number(it.price ?? p.price);
+//       const pDisc    = Number(it.productDiscount ?? 0);
+//       const gstRate  = Number(it.gstRate ?? p.gstRate ?? 0);
+//       const packUnit = it.packagingUnit || 'unit';
+//       const lineBase = price * qty;
+//       const discAmt  = lineBase * (pDisc / 100);
+//       const afterDisc= lineBase - discAmt;
+//       const gstAmt   = afterDisc * (gstRate / 100);
+//       const lineTotal= afterDisc + gstAmt;
+//       subTotal += lineBase; totalProdDiscAmt += discAmt; gstTotal += gstAmt;
+//       return { p, qty, price, pDisc, discAmt, gstRate, gstAmt, lineTotal, packUnit };
+//     });
+
+//     const afterProdDisc = subTotal - totalProdDiscAmt + gstTotal;
+//     const billDiscPct   = Math.max(0, Math.min(100, Number(billDiscount || 0)));
+//     const billDiscAmt   = afterProdDisc * (billDiscPct / 100);
+//     const grandTotal    = Math.max(0, afterProdDisc - billDiscAmt);
+//     const paid          = amountPaid !== null ? Math.max(0, Number(amountPaid)) : grandTotal;
+//     const balanceDue    = Math.max(0, grandTotal - paid);
+
+//     const siCols = db.prepare("PRAGMA table_info('sale_items')").all().map(r => r.name);
+//     const hasExtItemCols = siCols.includes('productDiscount');
+//     const itemStmt = hasExtItemCols
+//       ? db.prepare('INSERT INTO sale_items (saleId,productId,qty,price,productDiscount,discountAmount,gstRate,gstAmount,lineTotal,packagingUnit) VALUES (?,?,?,?,?,?,?,?,?,?)')
+//       : db.prepare('INSERT INTO sale_items (saleId,productId,qty,price,gstRate,gstAmount,lineTotal) VALUES (?,?,?,?,?,?,?)');
+//     const stockStmt = db.prepare('UPDATE products SET stockQty=stockQty-?, updatedAt=? WHERE id=?');
+
+//     let newItemCount = 0;
+//     for (const it of processed) {
+//       if (it.qty > 0) {
+//         if (it.p.stockQty < it.qty) throw new Error(`Insufficient stock for ${it.p.name}`);
+//         if (hasExtItemCols) {
+//           itemStmt.run(saleId, it.p.id, it.qty, it.price, it.pDisc, it.discAmt, it.gstRate, it.gstAmt, it.lineTotal, it.packUnit);
+//         } else {
+//           itemStmt.run(saleId, it.p.id, it.qty, it.price, it.gstRate, it.gstAmt, it.lineTotal);
+//         }
+//         stockStmt.run(it.qty, now, it.p.id);
+//         newItemCount++;
+//       }
+//     }
+
+//     const saleCols = db.prepare("PRAGMA table_info('sales')").all().map(r => r.name);
+//     const hasNewSaleCols = saleCols.includes('amountPaid');
+//     if (hasNewSaleCols) {
+//       db.prepare('UPDATE sales SET subTotal=?,gstTotal=?,discount=?,billDiscount=?,grandTotal=?,amountPaid=?,balanceDue=?,totalItems=?,updatedAt=? WHERE id=?')
+//         .run(subTotal, gstTotal, totalProdDiscAmt, billDiscAmt, grandTotal, paid, balanceDue, newItemCount, now, saleId);
+//     } else {
+//       db.prepare('UPDATE sales SET subTotal=?,gstTotal=?,discount=?,grandTotal=?,totalItems=?,updatedAt=? WHERE id=?')
+//         .run(subTotal, gstTotal, totalProdDiscAmt, grandTotal, newItemCount, now, saleId);
+//     }
+
+//     // Adjust customer balance
+//     if (orig.customerId && hasNewSaleCols) {
+//       const oldBal = Number(orig.balanceDue || 0);
+//       const delta  = balanceDue - oldBal;
+//       if (delta !== 0) {
+//         const custCols = db.prepare("PRAGMA table_info('customers')").all().map(r => r.name);
+//         if (custCols.includes('balance')) {
+//           const cust = db.prepare('SELECT balance FROM customers WHERE id=?').get(orig.customerId);
+//           const newBal = Math.max(0, Number(cust.balance || 0) + delta);
+//           db.prepare('UPDATE customers SET balance=?,updatedAt=? WHERE id=?').run(newBal, now, orig.customerId);
+//           const hasLedger = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='customer_ledger'").get();
+//           if (hasLedger) {
+//             db.prepare('INSERT INTO customer_ledger (customerId,billId,type,debit,credit,balance,note,createdAt) VALUES (?,?,?,?,?,?,?,?)')
+//               .run(orig.customerId, saleId, 'ADJUSTMENT',
+//                    delta > 0 ? delta : 0, delta < 0 ? Math.abs(delta) : 0,
+//                    newBal, `Bill edit – ${orig.invoiceNo}`, now);
+//           }
+//         }
+//       }
+//     }
+
+//     return getById(saleId);
+//   })();
+// }
+
+// function getCustomerLedger(customerId) {
+//   const db = getDb();
+//   const hasLedger = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='customer_ledger'").get();
+//   if (!hasLedger) return [];
+//   return db.prepare(`
+//     SELECT cl.*, s.invoiceNo FROM customer_ledger cl
+//     LEFT JOIN sales s ON s.id=cl.billId
+//     WHERE cl.customerId=? ORDER BY cl.createdAt DESC LIMIT 100
+//   `).all(customerId);
+// }
+
+// function recordPayment({ customerId, amount, note = '' }) {
+//   const db = getDb();
+//   if (!customerId || amount <= 0) throw new Error('Invalid payment');
+//   return db.transaction(() => {
+//     const now = new Date().toISOString();
+//     const cust = db.prepare('SELECT * FROM customers WHERE id=?').get(customerId);
+//     if (!cust) throw new Error('Customer not found');
+//     const newBalance = Math.max(0, Number(cust.balance || 0) - amount);
+//     db.prepare('UPDATE customers SET balance=?,updatedAt=? WHERE id=?').run(newBalance, now, customerId);
+//     const hasLedger = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='customer_ledger'").get();
+//     if (hasLedger) {
+//       db.prepare('INSERT INTO customer_ledger (customerId,billId,type,debit,credit,balance,note,createdAt) VALUES (?,NULL,?,0,?,?,?,?)')
+//         .run(customerId, 'PAYMENT', amount, newBalance, note || 'Manual payment', now);
+//     }
+//     return { balance: newBalance };
+//   })();
+// }
+
+// function day(iso) {
+//   const d = new Date(iso);
+//   const pad = n => String(n).padStart(2, '0');
+//   return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}`;
+// }
+
+// module.exports = { list, getById, create, edit, getCustomerLedger, recordPayment };
+
+
+/**
+ * sales.model.js — Fixed FK constraint issue.
+ * Root cause: userId / customerId not validated before INSERT.
+ * Fix: validate both outside the transaction; cast to int or null.
+ */
+const { getDb } = require('../config/db');
+const { nanoid } = require('nanoid');
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Schema detection — called once per request, OUTSIDE any transaction
+// ─────────────────────────────────────────────────────────────────────────────
+function getSchemaInfo(db) {
+  const saleCols  = db.prepare("PRAGMA table_info('sales')").all().map(r => r.name);
+  const siCols    = db.prepare("PRAGMA table_info('sale_items')").all().map(r => r.name);
+  const custCols  = db.prepare("PRAGMA table_info('customers')").all().map(r => r.name);
+  const hasLedger = !!db.prepare(
+    "SELECT name FROM sqlite_master WHERE type='table' AND name='customer_ledger'"
+  ).get();
+  return {
+    hasNewSaleCols: saleCols.includes('amountPaid'),
+    hasExtItemCols: siCols.includes('productDiscount'),
+    hasBalance:     custCols.includes('balance'),
+    hasLedger,
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Safe integer cast — returns integer or null (never undefined / NaN / 0)
+// ─────────────────────────────────────────────────────────────────────────────
+function toIdOrNull(v) {
+  const n = parseInt(v, 10);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LIST
+// ─────────────────────────────────────────────────────────────────────────────
+function list({ from, to, q = '', limit = 50, offset = 0 }) {
+  const db = getDb();
+  const clauses = [], params = [];
+  if (from) { clauses.push('s.createdAt >= ?'); params.push(from); }
+  if (to)   { clauses.push('s.createdAt <= ?'); params.push(to + 'T23:59:59.999Z'); }
+  const qq = String(q || '').trim();
+  if (qq) { clauses.push('(s.invoiceNo LIKE ? OR c.name LIKE ?)'); params.push(`%${qq}%`, `%${qq}%`); }
+  const where = clauses.length ? `WHERE ${clauses.join(' AND ')}` : '';
+  return db.prepare(`
+    SELECT s.*, c.name AS customerName, c.phone AS customerPhone
+    FROM sales s LEFT JOIN customers c ON c.id = s.customerId
+    ${where} ORDER BY s.createdAt DESC LIMIT ? OFFSET ?
+  `).all(...params, limit, offset);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GET BY ID
+// ─────────────────────────────────────────────────────────────────────────────
+function getById(id) {
+  const db   = getDb();
+  const sale = db.prepare(`
+    SELECT s.*, c.name AS customerName, c.phone AS customerPhone, c.balance AS customerBalance
+    FROM sales s LEFT JOIN customers c ON c.id = s.customerId WHERE s.id = ?
+  `).get(id);
+  if (!sale) return null;
+  const items = db.prepare(`
+    SELECT si.*, p.name AS productName, p.barcode, p.unitsPerStrip, p.stripsPerBox
+    FROM sale_items si JOIN products p ON p.id = si.productId
+    WHERE si.saleId = ? ORDER BY si.id ASC
+  `).all(id);
+  return { ...sale, items };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CREATE
+// ─────────────────────────────────────────────────────────────────────────────
+function create({
+  userId,
+  customerId     = null,
+  isNewCustomer  = false,
+  customerName   = null,
+  customerPhone  = null,
+  paymentMethod  = 'CASH',
+  items          = [],
+  discount       = 0,
+  billDiscount   = 0,
+  amountPaid     = null,
+}) {
+  const db = getDb();
+  if (!Array.isArray(items) || items.length === 0) throw new Error('No items');
+
+  // ── 1. Validate and cast userId  (OUTSIDE transaction) ─────────────────
+  const safeUserId = toIdOrNull(userId);
+  if (!safeUserId) throw new Error('Invalid userId');
+
+  const userRow = db.prepare('SELECT id FROM users WHERE id = ?').get(safeUserId);
+  if (!userRow) throw new Error(`User ${safeUserId} not found`);
+
+  // ── 2. Validate customerId if provided  (OUTSIDE transaction) ──────────
+  let safeCustomerId = toIdOrNull(customerId); // null for walk-in / new customer
+
+  if (safeCustomerId && !isNewCustomer) {
+    const custRow = db.prepare('SELECT id FROM customers WHERE id = ?').get(safeCustomerId);
+    if (!custRow) {
+      // Customer was deleted — fall back to walk-in rather than crashing
+      safeCustomerId = null;
+    }
+  } else if (!isNewCustomer) {
+    safeCustomerId = null; // explicit walk-in
+  }
+
+  // ── 3. Detect schema  (OUTSIDE transaction) ────────────────────────────
+  const { hasNewSaleCols, hasExtItemCols, hasBalance, hasLedger } = getSchemaInfo(db);
+
+  // ── 4. Pre-fetch prevBalance for existing customer  (OUTSIDE tx) ────────
+  let prevBalance = 0;
+  if (safeCustomerId && hasBalance) {
+    const cust = db.prepare('SELECT balance FROM customers WHERE id = ?').get(safeCustomerId);
+    prevBalance = cust ? Number(cust.balance || 0) : 0;
+  }
+
+  // ── 5. Pre-prepare all SQL statements  (OUTSIDE transaction) ───────────
+  // Customer INSERT variants
+  const insertCustWithBalance = hasBalance
+    ? db.prepare('INSERT INTO customers (name,phone,email,address,loyaltyPoints,balance,createdAt,updatedAt) VALUES (?,?,NULL,NULL,0,0,?,?)')
+    : null;
+  const insertCustNoBalance   = db.prepare('INSERT INTO customers (name,phone,email,address,loyaltyPoints,createdAt,updatedAt) VALUES (?,?,NULL,NULL,0,?,?)');
+  const findCustByPhone       = db.prepare('SELECT id FROM customers WHERE phone = ? LIMIT 1');
+  const findCustByName        = db.prepare('SELECT id FROM customers WHERE name = ? LIMIT 1');
+  const getCustBalance        = hasBalance ? db.prepare('SELECT balance FROM customers WHERE id = ?') : null;
+
+  // Sale INSERT variants
+  const insertSaleStmt = hasNewSaleCols
+    ? db.prepare(`
+        INSERT INTO sales
+          (invoiceNo,userId,customerId,paymentMethod,subTotal,gstTotal,
+           discount,billDiscount,grandTotal,amountPaid,balanceDue,prevBalance,
+           status,createdAt,updatedAt,totalItems)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,'COMPLETED',?,?,?)
+      `)
+    : db.prepare(`
+        INSERT INTO sales
+          (invoiceNo,userId,customerId,paymentMethod,
+           subTotal,gstTotal,discount,grandTotal,status,createdAt,updatedAt,totalItems)
+        VALUES (?,?,?,?,?,?,?,?,'COMPLETED',?,?,?)
+      `);
+
+  // Sale item INSERT variants
+  const insertItemStmt = hasExtItemCols
+    ? db.prepare(`
+        INSERT INTO sale_items
+          (saleId,productId,qty,price,productDiscount,discountAmount,gstRate,gstAmount,lineTotal,packagingUnit)
+        VALUES (?,?,?,?,?,?,?,?,?,?)
+      `)
+    : db.prepare(`
+        INSERT INTO sale_items (saleId,productId,qty,price,gstRate,gstAmount,lineTotal)
+        VALUES (?,?,?,?,?,?,?)
+      `);
+
+  const updateStockStmt   = db.prepare('UPDATE products SET stockQty = stockQty - ?, updatedAt = ? WHERE id = ?');
+  const updateCustBalance = hasBalance
+    ? db.prepare('UPDATE customers SET balance = ?, loyaltyPoints = loyaltyPoints + ?, updatedAt = ? WHERE id = ?')
+    : null;
+  const updateCustPoints  = db.prepare('UPDATE customers SET loyaltyPoints = loyaltyPoints + ?, updatedAt = ? WHERE id = ?');
+  const insertLedgerStmt  = hasLedger
+    ? db.prepare('INSERT INTO customer_ledger (customerId,billId,type,debit,credit,balance,note,createdAt) VALUES (?,?,?,?,?,?,?,?)')
+    : null;
+
+  // ── 6. Transaction ───────────────────────────────────────────────────────
+  return db.transaction(() => {
+    const now       = new Date().toISOString();
+    const invoiceNo = `INV-${day(now)}-${nanoid(6).toUpperCase()}`;
+
+    // Resolve / create customer
+    let resolvedId = safeCustomerId; // null or validated integer
+
+    if (isNewCustomer && customerName) {
+      let existing = null;
+      if (customerPhone) existing = findCustByPhone.get(customerPhone);
+      if (!existing)     existing = findCustByName.get(customerName);
+
+      if (existing) {
+        resolvedId = existing.id;
+      } else {
+        // Create new customer
+        const info = (insertCustWithBalance || insertCustNoBalance)
+          .run(customerName, customerPhone || null, now, now);
+        resolvedId = toIdOrNull(info.lastInsertRowid);
+      }
+
+      // Fetch prevBalance for the just-created / found customer
+      if (resolvedId && getCustBalance) {
+        const c = getCustBalance.get(resolvedId);
+        prevBalance = c ? Number(c.balance || 0) : 0;
+      }
+    }
+
+    // resolvedId is now null or a valid customer id that definitely exists
+    // Cast again to be 100% sure it is integer | null
+    resolvedId = toIdOrNull(resolvedId);
+
+    // Compute totals
+    let subTotal = 0, gstTotal = 0, totalProdDiscAmt = 0;
+    const processed = items.map(it => {
+      const p = db.prepare('SELECT * FROM products WHERE id = ?').get(toIdOrNull(it.productId));
+      if (!p || p.isActive === 0) throw new Error('Invalid product');
+      const qty      = Number(it.qty || 0);
+      if (qty <= 0) throw new Error('Invalid quantity');
+      if (p.stockQty < qty) throw new Error(`Insufficient stock for ${p.name}`);
+
+      const price    = Number(it.price    ?? p.price);
+      const pDisc    = Number(it.productDiscount ?? p.productDiscount ?? 0);
+      const gstRate  = Number(it.gstRate  ?? p.gstRate ?? 0);
+      const packUnit = it.packagingUnit || p.packagingUnit || 'unit';
+
+      const lineBase = price * qty;
+      const discAmt  = lineBase * (pDisc / 100);
+      const afterDisc= lineBase - discAmt;
+      const gstAmt   = afterDisc * (gstRate / 100);
+      const lineTotal= afterDisc + gstAmt;
+
+      subTotal         += lineBase;
+      totalProdDiscAmt += discAmt;
+      gstTotal         += gstAmt;
+
+      return { productId: p.id, qty, price, pDisc, discAmt, gstRate, gstAmt, lineTotal, packUnit };
+    });
+
+    const afterProdDisc = subTotal - totalProdDiscAmt + gstTotal;
+    const billDiscPct   = Math.max(0, Math.min(100, Number(billDiscount || 0)));
+    const billDiscAmt   = afterProdDisc * (billDiscPct / 100);
+    const flatDiscount  = Math.max(0, Number(discount || 0));
+    const grandTotal    = Math.max(0, afterProdDisc - billDiscAmt - flatDiscount);
+    const paid          = amountPaid !== null ? Math.max(0, Number(amountPaid)) : grandTotal;
+    const balanceDue    = Math.max(0, grandTotal - paid);
+
+    // Insert sale — userId and customerId are now guaranteed valid
+    const saleInfo = hasNewSaleCols
+      ? insertSaleStmt.run(
+          invoiceNo, safeUserId, resolvedId, paymentMethod,
+          subTotal, gstTotal, totalProdDiscAmt + flatDiscount, billDiscAmt, grandTotal,
+          paid, balanceDue, prevBalance,
+          now, now, items.length
+        )
+      : insertSaleStmt.run(
+          invoiceNo, safeUserId, resolvedId, paymentMethod,
+          subTotal, gstTotal, totalProdDiscAmt + flatDiscount, grandTotal,
+          now, now, items.length
+        );
+
+    const saleId = saleInfo.lastInsertRowid;
+
+    // Insert items + update stock
+    for (const it of processed) {
+      if (hasExtItemCols) {
+        insertItemStmt.run(saleId, it.productId, it.qty, it.price, it.pDisc, it.discAmt, it.gstRate, it.gstAmt, it.lineTotal, it.packUnit);
+      } else {
+        insertItemStmt.run(saleId, it.productId, it.qty, it.price, it.gstRate, it.gstAmt, it.lineTotal);
+      }
+      updateStockStmt.run(it.qty, now, it.productId);
+    }
+
+    // Update customer balance + ledger
+    if (resolvedId) {
+      const points     = Math.floor(grandTotal / 100);
+      const newBalance = prevBalance + balanceDue;
+
+      if (updateCustBalance) {
+        updateCustBalance.run(newBalance, points, now, resolvedId);
+      } else {
+        updateCustPoints.run(points, now, resolvedId);
+      }
+
+      if (insertLedgerStmt) {
+        insertLedgerStmt.run(resolvedId, saleId, 'SALE', grandTotal, paid, newBalance, `Invoice ${invoiceNo}`, now);
+      }
+    }
+
+    return getById(saleId);
+  })();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// EDIT
+// ─────────────────────────────────────────────────────────────────────────────
+function edit(saleId, { items = [], billDiscount = 0, amountPaid = null }) {
+  const db = getDb();
+  const { hasNewSaleCols, hasExtItemCols, hasBalance, hasLedger } = getSchemaInfo(db);
+
+  const insertItemStmt = hasExtItemCols
+    ? db.prepare('INSERT INTO sale_items (saleId,productId,qty,price,productDiscount,discountAmount,gstRate,gstAmount,lineTotal,packagingUnit) VALUES (?,?,?,?,?,?,?,?,?,?)')
+    : db.prepare('INSERT INTO sale_items (saleId,productId,qty,price,gstRate,gstAmount,lineTotal) VALUES (?,?,?,?,?,?,?)');
+
+  return db.transaction(() => {
+    const now  = new Date().toISOString();
+    const orig = getById(saleId);
+    if (!orig) throw new Error('Sale not found');
+    if (orig.status === 'VOIDED') throw new Error('Cannot edit a voided sale');
+
+    // Restore stock
+    for (const oi of orig.items) {
+      db.prepare('UPDATE products SET stockQty = stockQty + ?, updatedAt = ? WHERE id = ?').run(oi.qty, now, oi.productId);
+    }
+    db.prepare('DELETE FROM sale_items WHERE saleId = ?').run(saleId);
+
+    let subTotal = 0, gstTotal = 0, totalProdDiscAmt = 0;
+    const processed = items.map(it => {
+      const p = db.prepare('SELECT * FROM products WHERE id = ?').get(toIdOrNull(it.productId));
+      if (!p) throw new Error('Invalid product');
+      const qty      = Math.max(0, Number(it.qty || 0));
+      const price    = Number(it.price    ?? p.price);
+      const pDisc    = Number(it.productDiscount ?? 0);
+      const gstRate  = Number(it.gstRate  ?? p.gstRate ?? 0);
+      const packUnit = it.packagingUnit || 'unit';
+      const lineBase = price * qty;
+      const discAmt  = lineBase * (pDisc / 100);
+      const afterDisc= lineBase - discAmt;
+      const gstAmt   = afterDisc * (gstRate / 100);
+      const lineTotal= afterDisc + gstAmt;
+      subTotal += lineBase; totalProdDiscAmt += discAmt; gstTotal += gstAmt;
+      return { p, qty, price, pDisc, discAmt, gstRate, gstAmt, lineTotal, packUnit };
+    });
+
+    const afterProdDisc = subTotal - totalProdDiscAmt + gstTotal;
+    const billDiscPct   = Math.max(0, Math.min(100, Number(billDiscount || 0)));
+    const billDiscAmt   = afterProdDisc * (billDiscPct / 100);
+    const grandTotal    = Math.max(0, afterProdDisc - billDiscAmt);
+    const paid          = amountPaid !== null ? Math.max(0, Number(amountPaid)) : grandTotal;
+    const balanceDue    = Math.max(0, grandTotal - paid);
+
+    let newItemCount = 0;
+    for (const it of processed) {
+      if (it.qty > 0) {
+        if (it.p.stockQty < it.qty) throw new Error(`Insufficient stock for ${it.p.name}`);
+        if (hasExtItemCols) {
+          insertItemStmt.run(saleId, it.p.id, it.qty, it.price, it.pDisc, it.discAmt, it.gstRate, it.gstAmt, it.lineTotal, it.packUnit);
+        } else {
+          insertItemStmt.run(saleId, it.p.id, it.qty, it.price, it.gstRate, it.gstAmt, it.lineTotal);
+        }
+        db.prepare('UPDATE products SET stockQty = stockQty - ?, updatedAt = ? WHERE id = ?').run(it.qty, now, it.p.id);
+        newItemCount++;
+      }
+    }
+
+    if (hasNewSaleCols) {
+      db.prepare('UPDATE sales SET subTotal=?,gstTotal=?,discount=?,billDiscount=?,grandTotal=?,amountPaid=?,balanceDue=?,totalItems=?,updatedAt=? WHERE id=?')
+        .run(subTotal, gstTotal, totalProdDiscAmt, billDiscAmt, grandTotal, paid, balanceDue, newItemCount, now, saleId);
+    } else {
+      db.prepare('UPDATE sales SET subTotal=?,gstTotal=?,discount=?,grandTotal=?,totalItems=?,updatedAt=? WHERE id=?')
+        .run(subTotal, gstTotal, totalProdDiscAmt, grandTotal, newItemCount, now, saleId);
+    }
+
+    if (orig.customerId && hasNewSaleCols && hasBalance) {
+      const oldBal = Number(orig.balanceDue || 0);
+      const delta  = balanceDue - oldBal;
+      if (delta !== 0) {
+        const cust   = db.prepare('SELECT balance FROM customers WHERE id = ?').get(orig.customerId);
+        const newBal = Math.max(0, Number(cust ? cust.balance : 0) + delta);
+        db.prepare('UPDATE customers SET balance = ?, updatedAt = ? WHERE id = ?').run(newBal, now, orig.customerId);
+        if (hasLedger) {
+          db.prepare('INSERT INTO customer_ledger (customerId,billId,type,debit,credit,balance,note,createdAt) VALUES (?,?,?,?,?,?,?,?)')
+            .run(orig.customerId, saleId, 'ADJUSTMENT',
+                 delta > 0 ? delta : 0, delta < 0 ? Math.abs(delta) : 0,
+                 newBal, `Bill edit – ${orig.invoiceNo}`, now);
+        }
+      }
+    }
+
+    return getById(saleId);
+  })();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LEDGER
+// ─────────────────────────────────────────────────────────────────────────────
+function getCustomerLedger(customerId) {
+  const db = getDb();
+  const { hasLedger } = getSchemaInfo(db);
+  if (!hasLedger) return [];
+  return db.prepare(`
+    SELECT cl.*, s.invoiceNo FROM customer_ledger cl
+    LEFT JOIN sales s ON s.id = cl.billId
+    WHERE cl.customerId = ? ORDER BY cl.createdAt DESC LIMIT 100
+  `).all(customerId);
+}
+
+function recordPayment({ customerId, amount, note = '' }) {
+  const db = getDb();
+  if (!customerId || amount <= 0) throw new Error('Invalid payment');
+  const { hasBalance, hasLedger } = getSchemaInfo(db);
+  return db.transaction(() => {
+    const now  = new Date().toISOString();
+    const cust = db.prepare('SELECT * FROM customers WHERE id = ?').get(customerId);
+    if (!cust) throw new Error('Customer not found');
+    if (hasBalance) {
+      const newBal = Math.max(0, Number(cust.balance || 0) - amount);
+      db.prepare('UPDATE customers SET balance = ?, updatedAt = ? WHERE id = ?').run(newBal, now, customerId);
+      if (hasLedger) {
+        db.prepare('INSERT INTO customer_ledger (customerId,billId,type,debit,credit,balance,note,createdAt) VALUES (?,NULL,?,0,?,?,?,?)')
+          .run(customerId, 'PAYMENT', amount, newBal, note || 'Manual payment', now);
+      }
+      return { balance: newBal };
+    }
+    return { balance: 0 };
+  })();
+}
+
+function day(iso) {
+  const d = new Date(iso);
+  const pad = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}`;
+}
+
+module.exports = { list, getById, create, edit, getCustomerLedger, recordPayment };
