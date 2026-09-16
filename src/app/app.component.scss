@@ -11,17 +11,19 @@
   display: flex;
   flex-direction: column;
   transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
 
   &.collapsed {
     width: 80px;
 
     .brand {
       padding: var(--spacing-sm);
+      justify-content: center;
 
       .brand-text {
         opacity: 0;
         width: 0;
-        margin-right: 0;
+        flex: 0 0 0;
       }
 
       .logo {
@@ -29,46 +31,39 @@
         height: 40px;
         font-size: 24px;
       }
-
-      .collapse-btn {
-        width: 26px;
-        height: 26px;
-        line-height: 26px;
-
-        .mat-icon {
-          font-size: 18px;
-          width: 18px;
-          height: 18px;
-        }
-      }
     }
 
     mat-nav-list {
       a.mat-mdc-list-item {
-        padding: var(--spacing-sm) 0 !important;
+        padding: 0 !important;
+        margin: var(--spacing-xs) auto;
         justify-content: center;
+        width: 46px;
         min-height: 46px !important;
+        height: 46px !important;
+        max-height: 46px !important;
+
+        .mdc-list-item__content {
+          justify-content: center;
+          width: 46px;
+        }
 
         .mat-icon {
-          margin-right: 0;
+          margin: 0;
         }
 
         span {
-          opacity: 0;
-          width: 0;
-          overflow: hidden;
+          display: none;
         }
       }
     }
 
     .foot {
+      padding: var(--spacing-sm);
       justify-content: center;
-      gap: 0;
 
-      .muted, .badge {
-        opacity: 0;
-        width: 0;
-        overflow: hidden;
+      .foot-meta {
+        display: none;
       }
     }
   }
@@ -100,7 +95,7 @@
   white-space: nowrap;
   opacity: 1;
   width: auto;
-  transition: opacity 0.25s ease, width 0.3s ease;
+  transition: opacity 0.25s ease, width 0.3s ease, flex 0.3s ease;
 }
 
 .logo {
@@ -118,26 +113,32 @@
 }
 
 .collapse-btn {
-  position: absolute;
-  right: 6px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 30px;
-  height: 30px;
-  line-height: 30px;
-  background: rgba(0, 0, 0, 0.18);
-  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--app-bg-secondary);
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius-sm);
 
   &:hover {
-    background: rgba(0, 0, 0, 0.32);
+    background: var(--app-surface-hover);
+  }
+
+  ::ng-deep .mat-mdc-button-touch-target,
+  ::ng-deep .mat-mdc-focus-indicator {
+    display: none;
   }
 
   .mat-icon {
-    font-size: 20px;
-    width: 20px;
-    height: 20px;
-    line-height: 20px;
-    color: #fff;
+    margin: 0 !important;
+    font-size: 22px;
+    width: 22px;
+    height: 22px;
+    line-height: 22px;
+    color: var(--app-muted);
     transition: transform 0.3s ease;
   }
 }
@@ -158,6 +159,7 @@
 mat-nav-list {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 0 !important;
   
   a.mat-mdc-list-item {
@@ -168,11 +170,18 @@ mat-nav-list {
     min-height: 48px !important;
     height: auto !important;
     padding: var(--spacing-sm) var(--spacing-md) !important;
+
+    .mdc-list-item__content {
+      display: flex;
+      align-items: center;
+      min-width: 0;
+    }
     
     .mat-icon {
       margin-right: var(--spacing-md);
       color: var(--app-muted);
       transition: all 0.25s ease;
+      flex-shrink: 0;
     }
     
     span {
@@ -180,6 +189,8 @@ mat-nav-list {
       font-size: 14px;
       white-space: nowrap;
       overflow: hidden;
+      text-overflow: ellipsis;
+      min-width: 0;
       opacity: 1;
       transition: opacity 0.25s ease, width 0.3s ease;
     }
@@ -214,9 +225,18 @@ mat-nav-list {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: var(--spacing-sm);
   color: var(--app-muted);
   font-size: 12px;
   transition: all 0.3s ease;
+  
+  .foot-meta {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    overflow: hidden;
+    white-space: nowrap;
+  }
   
   .badge {
     background: var(--app-primary);

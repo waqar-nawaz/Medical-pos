@@ -10,11 +10,6 @@
         <div class="title">Medical POS</div>
         <div class="sub">Professional Edition</div>
       </div>
-      <button mat-icon-button class="collapse-btn" (click)="toggleSidebar()"
-              [attr.aria-label]="sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'"
-              matTooltip="{{ sidebarCollapsed ? 'Expand' : 'Collapse' }}">
-        <mat-icon>{{ sidebarCollapsed ? 'chevron_right' : 'chevron_left' }}</mat-icon>
-      </button>
     </div>
 
     <!-- Main Navigation -->
@@ -67,8 +62,15 @@
 
     <!-- Footer -->
     <div class="foot">
-      <div class="muted">v{{ auth.version }}</div>
-      <div class="badge">PRO</div>
+      <button mat-icon-button class="collapse-btn" (click)="toggleSidebar()"
+              [attr.aria-label]="sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'"
+              matTooltip="{{ sidebarCollapsed ? 'Expand' : 'Collapse' }}">
+        <mat-icon>{{ sidebarCollapsed ? 'chevron_right' : 'chevron_left' }}</mat-icon>
+      </button>
+      <div class="foot-meta">
+        <div class="muted">v{{ auth.version }}</div>
+        <div class="badge">PRO</div>
+      </div>
     </div>
   </mat-sidenav>
 

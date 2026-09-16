@@ -266,6 +266,30 @@ p {
   background: transparent !important;
 }
 
+/* Dialogs always follow the active theme via CSS vars */
+.mat-mdc-dialog-container,
+.mat-mdc-dialog-surface {
+  --mdc-dialog-container-color: var(--app-surface);
+  background: var(--app-surface) !important;
+  color: var(--app-text);
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius-lg) !important;
+}
+
+.mat-mdc-dialog-title {
+  color: var(--app-text) !important;
+}
+
+.mat-mdc-dialog-content,
+.mat-mdc-dialog-actions {
+  color: var(--app-text);
+}
+
+.theme-dark .mat-mdc-dialog-container,
+.theme-dark .mat-mdc-dialog-surface {
+  border-color: var(--app-border);
+}
+
 .mat-mdc-card {
   border-radius: var(--app-radius) !important;
   background: var(--app-surface);
