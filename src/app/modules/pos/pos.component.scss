@@ -548,11 +548,11 @@ button[mat-icon-button] {
   --pos-green:   #16a34a;
   --pos-red:     #dc2626;
   --pos-amber:   #d97706;
-  --pos-surface: #f8fafc;
-  --pos-border:  #e2e8f0;
-  --pos-text:    #0f172a;
-  --pos-muted:   #64748b;
-  --pos-card:    #ffffff;
+  --pos-surface: var(--app-bg-secondary, #f8fafc);
+  --pos-border:  var(--app-border, #e2e8f0);
+  --pos-text:    var(--app-text, #0f172a);
+  --pos-muted:   var(--app-muted, #64748b);
+  --pos-card:    var(--app-surface, #ffffff);
   --radius-lg:   14px;
   --radius-md:   8px;
   --shadow-sm:   0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
@@ -699,7 +699,7 @@ button[mat-icon-button] {
   border: 1px solid var(--pos-border);
   border-radius: var(--radius-md);
   margin-bottom: 8px;
-  background: #fff;
+  background: var(--pos-card);
   transition: border-color .15s, box-shadow .15s;
 
   &:hover {
@@ -771,7 +771,7 @@ button[mat-icon-button] {
     height: 28px !important;
     min-width: 28px !important;
     border-radius: 5px !important;
-    background: #fff;
+    background: var(--pos-card);
 
     mat-icon {
       font-size: 16px !important;
@@ -795,7 +795,7 @@ button[mat-icon-button] {
   font-size: 13px;
   font-weight: 700;
   outline: none;
-  background: #fff;
+  background: var(--pos-card);
   color: var(--pos-text);
   transition: border-color .15s;
 
@@ -999,7 +999,8 @@ button[mat-icon-button] {
     font-weight: 700;
     text-align: right;
     outline: none;
-    background: #fff;
+    background: var(--pos-card);
+    color: var(--pos-text);
     transition: border-color .15s;
 
     &:focus { border-color: var(--pos-teal); }
@@ -1151,3 +1152,150 @@ button[mat-icon-button] {
 }
 
 .mt-3 { margin-top: 20px; }
+
+/* ============================================================
+   DARK MODE OVERRIDES
+   ============================================================ */
+.theme-dark {
+  --pos-blue:    #7da2fa;
+  --pos-teal:    #2dd4bf;
+  --pos-green:   #34d399;
+  --pos-red:     #f87171;
+  --pos-amber:   #fbbf24;
+  --pos-surface: var(--app-bg-secondary, #1e293b);
+  --pos-border:  var(--app-border, #334155);
+  --pos-text:    var(--app-text, #f1f5f9);
+  --pos-muted:   var(--app-muted, #94a3b8);
+  --pos-card:    var(--app-surface, #1e293b);
+
+  .cart-card, .items-card, .summary-card {
+    border-color: var(--pos-border) !important;
+  }
+
+  mat-card {
+    color: var(--app-text) !important;
+  }
+
+  mat-card-content {
+    color: var(--app-text) !important;
+  }
+
+  /* Autocomplete + dropdown panels */
+  .mat-autocomplete-panel,
+  .mat-select-panel {
+    background: var(--app-surface) !important;
+    color: var(--app-text) !important;
+
+    .mat-option {
+      color: var(--app-text);
+
+      &:hover, &.mat-mdc-option-active {
+        background: var(--app-surface-hover) !important;
+      }
+    }
+  }
+
+  /* Search field */
+  .search-field {
+    .mat-mdc-text-field-wrapper,
+    .mdc-text-field,
+    .mat-mdc-form-field-focus-overlay {
+      background: var(--app-surface) !important;
+    }
+
+    input {
+      color: var(--app-text);
+      caret-color: var(--app-primary);
+    }
+  }
+
+  /* Product option badges */
+  .category-badge {
+    background: rgba(125, 162, 250, 0.15);
+    color: var(--pos-blue);
+  }
+
+  .item-unit-badge {
+    background: rgba(125, 162, 250, 0.15);
+    color: var(--pos-blue);
+    border-color: rgba(125, 162, 250, 0.4);
+  }
+
+  .item-discount-wrap {
+    background: rgba(251, 191, 36, 0.1);
+    border-color: rgba(251, 191, 36, 0.35);
+
+    .disc-input { color: var(--pos-amber); }
+  }
+
+  /* Selected customer chip */
+  .selected-customer-chip {
+    background: rgba(125, 162, 250, 0.12);
+    border-color: rgba(125, 162, 250, 0.35);
+
+    .chip-name { color: var(--pos-text); }
+  }
+
+  /* New customer form */
+  .new-customer-form {
+    background: var(--app-bg-secondary);
+    border-color: rgba(125, 162, 250, 0.4);
+
+    .new-customer-header { color: var(--pos-blue); }
+  }
+
+  /* Customer option in autocomplete */
+  .create-new-option {
+    background: rgba(52, 211, 153, 0.12) !important;
+  }
+
+  /* Totals */
+  .totals-section {
+    background: var(--app-bg-secondary);
+    border-color: var(--pos-border);
+
+    .total-row { color: var(--pos-text); }
+  }
+
+  .item-total {
+    color: var(--app-text);
+  }
+
+  .grand-total {
+    border-top-color: var(--app-primary) !important;
+    border-bottom-color: var(--app-primary) !important;
+
+    span:first-child { color: var(--app-text) !important; }
+    .amount { color: var(--app-primary) !important; }
+  }
+
+  .balance-due {
+    background: rgba(248, 113, 113, 0.12) !important;
+  }
+
+  /* Last sale banner */
+  .last-sale {
+    background: rgba(52, 211, 153, 0.1);
+    border-color: rgba(52, 211, 153, 0.35);
+
+    .last-sale-header { color: var(--pos-green); }
+    .last-sale-info {
+      background: rgba(52, 211, 153, 0.08);
+      strong { color: var(--pos-green); }
+      .amount { color: var(--pos-green); }
+    }
+  }
+
+  /* Form fields */
+  .mat-mdc-form-field {
+    .mdc-text-field, .mat-mdc-select-value-text, .mdc-floating-label {
+      color: var(--app-text) !important;
+    }
+
+    .mat-mdc-select-arrow { color: var(--app-muted) !important; }
+  }
+
+  input {
+    color-scheme: dark;
+  }
+}
