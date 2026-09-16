@@ -175,6 +175,13 @@ mat-nav-list {
   outline: none;
 }
 
+.auth-view {
+  min-height: 100vh;
+  height: 100vh;
+  overflow: auto;
+  outline: none;
+}
+
 .ml8 {
   margin-left: var(--spacing-sm);
 }

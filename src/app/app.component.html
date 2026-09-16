@@ -1,5 +1,6 @@
 <a class="skip-link" href="#main">Skip to content</a>
 
+<ng-container *ngIf="auth.isLoggedIn$ | async; else authView">
 <mat-sidenav-container class="shell">
   <mat-sidenav #snav class="side" mode="side" opened>
     <!-- Brand Header -->
@@ -112,3 +113,10 @@
     </main>
   </mat-sidenav-content>
 </mat-sidenav-container>
+</ng-container>
+
+<ng-template #authView>
+  <main id="main" class="auth-view" tabindex="-1">
+    <router-outlet></router-outlet>
+  </main>
+</ng-template>

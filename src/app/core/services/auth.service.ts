@@ -18,11 +18,11 @@ export class AuthService {
   private tokenKey = 'medpos_token';
   private userKey = 'medpos_user';
 
-  private _isLoggedIn$ = new BehaviorSubject<boolean>(!!localStorage.getItem(this.tokenKey));
-  isLoggedIn$ = this._isLoggedIn$.asObservable();
-
   private _user$ = new BehaviorSubject<User | null>(this.readUser());
   user$ = this._user$.asObservable();
+
+  private _isLoggedIn$ = new BehaviorSubject<boolean>(this.isTokenValid());
+  isLoggedIn$ = this._isLoggedIn$.asObservable();
 
   version = '1.0.0';
 
@@ -37,7 +37,24 @@ export class AuthService {
     } catch {}
   }
 
+  private isTokenValid(): boolean {
+    const token = localStorage.getItem(this.tokenKey);
+    if (!token) return false;
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      if (!payload.exp || payload.exp * 1000 <= Date.now()) {
+        this.logout();
+        return false;
+      }
+      return true;
+    } catch {
+      this.logout();
+      return false;
+    }
+  }
+
   get token(): string | null {
+    if (!this.isTokenValid()) return null;
     return localStorage.getItem(this.tokenKey);
   }
 
