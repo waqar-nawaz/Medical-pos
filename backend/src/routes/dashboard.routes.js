@@ -1,8 +1,8 @@
 const router = require('express').Router();
 const Ctrl = require('../controllers/dashboard.controller');
-const { auth } = require('../middlewares/auth.middleware');
+const { auth, requirePermission } = require('../middlewares/auth.middleware');
 
-router.get('/stats', auth(true), Ctrl.stats);
-router.get('/top-products', auth(true), Ctrl.topProducts);
+router.get('/stats', auth(true), requirePermission('dashboard'), Ctrl.stats);
+router.get('/top-products', auth(true), requirePermission('dashboard'), Ctrl.topProducts);
 
 module.exports = router;

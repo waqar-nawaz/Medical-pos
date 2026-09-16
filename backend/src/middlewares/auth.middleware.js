@@ -30,4 +30,16 @@ function requireRole(...roles) {
   };
 }
 
-module.exports = { auth, requireRole };
+function requirePermission(perm) {
+  return (req, res, next) => {
+    const u = req.user;
+    if (!u) return res.status(401).json({ ok: false, error: { message: 'Unauthorized' } });
+    if (u.role === 'admin') return next();
+    const perms = Array.isArray(u.permissions) ? u.permissions : [];
+    const allowed = perms.includes(perm) || (perm === 'sales' && perms.includes('pos'));
+    if (allowed) return next();
+    return res.status(403).json({ ok: false, error: { message: 'Forbidden' } });
+  };
+}
+
+module.exports = { auth, requireRole, requirePermission };

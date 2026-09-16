@@ -1,7 +1,22 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, map } from 'rxjs';
 
-export type User = { id: number; email: string; name: string; role: 'admin' | 'cashier' };
+export type User = { id: number; email: string; name: string; role: 'admin' | 'cashier'; permissions: string[] | null };
+
+export const ALL_PERMISSIONS = [
+  'dashboard',
+  'pos',
+  'products',
+  'sales',
+  'suppliers',
+  'customers',
+  'purchase-orders',
+  'reports',
+  'settings',
+  'users',
+] as const;
+
+export type Permission = (typeof ALL_PERMISSIONS)[number];
 
 declare global {
   interface Window {
@@ -84,4 +99,17 @@ export class AuthService {
   hasRole(...roles: User['role'][]) {
     return this.user$.pipe(map(u => !!u && roles.includes(u.role)));
   }
+
+  isAdmin(): boolean {
+    return this._user$.getValue()?.role === 'admin';
+  }
+
+  hasPermission(perm: Permission): boolean {
+    const u = this._user$.getValue();
+    if (!u) return false;
+    if (u.role === 'admin') return true;
+    return Array.isArray(u.permissions) && u.permissions.includes(perm);
+  }
+
+  canAccess$ = (perm: Permission) => this.user$.pipe(map(u => !!u && (u.role === 'admin' || (Array.isArray(u.permissions) && u.permissions.includes(perm)))));
 }

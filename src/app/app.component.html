@@ -14,31 +14,31 @@
 
     <!-- Main Navigation -->
     <mat-nav-list aria-label="Primary navigation">
-      <a mat-list-item routerLink="/dashboard" routerLinkActive="active" class="slide-in">
+      <a mat-list-item routerLink="/dashboard" routerLinkActive="active" class="slide-in" *ngIf="canAccess('dashboard')">
         <mat-icon>dashboard</mat-icon>
         <span>Dashboard</span>
       </a>
-      <a mat-list-item routerLink="/pos" routerLinkActive="active" class="slide-in">
+      <a mat-list-item routerLink="/pos" routerLinkActive="active" class="slide-in" *ngIf="canAccess('pos')">
         <mat-icon>point_of_sale</mat-icon>
         <span>New Bill / POS</span>
       </a>
-      <a mat-list-item routerLink="/products" routerLinkActive="active" class="slide-in">
+      <a mat-list-item routerLink="/products" routerLinkActive="active" class="slide-in" *ngIf="canAccess('products')">
         <mat-icon>inventory_2</mat-icon>
         <span>Inventory</span>
       </a>
-      <a mat-list-item routerLink="/sales" routerLinkActive="active" class="slide-in">
+      <a mat-list-item routerLink="/sales" routerLinkActive="active" class="slide-in" *ngIf="canAccess('sales')">
         <mat-icon>receipt_long</mat-icon>
         <span>Sales History</span>
       </a>
-      <a mat-list-item routerLink="/suppliers" routerLinkActive="active" class="slide-in">
+      <a mat-list-item routerLink="/suppliers" routerLinkActive="active" class="slide-in" *ngIf="canAccess('suppliers')">
         <mat-icon>local_shipping</mat-icon>
         <span>Suppliers</span>
       </a>
-      <a mat-list-item routerLink="/customers" routerLinkActive="active" class="slide-in">
+      <a mat-list-item routerLink="/customers" routerLinkActive="active" class="slide-in" *ngIf="canAccess('customers')">
         <mat-icon>people</mat-icon>
         <span>Customers</span>
       </a>
-      <a mat-list-item routerLink="/purchase-orders" routerLinkActive="active" class="slide-in">
+      <a mat-list-item routerLink="/purchase-orders" routerLinkActive="active" class="slide-in" *ngIf="canAccess('purchase-orders')">
         <mat-icon>shopping_cart</mat-icon>
         <span>Purchase Orders</span>
       </a>
@@ -46,13 +46,17 @@
         <mat-icon>undo</mat-icon>
         <span>Returns</span>
       </a> -->
-      <a mat-list-item routerLink="/reports" routerLinkActive="active" class="slide-in">
+      <a mat-list-item routerLink="/reports" routerLinkActive="active" class="slide-in" *ngIf="canAccess('reports')">
         <mat-icon>analytics</mat-icon>
         <span>Reports</span>
       </a>
-      <a mat-list-item routerLink="/settings" routerLinkActive="active" class="slide-in">
+      <a mat-list-item routerLink="/settings" routerLinkActive="active" class="slide-in" *ngIf="canAccess('settings')">
         <mat-icon>settings</mat-icon>
         <span>Settings</span>
+      </a>
+      <a mat-list-item routerLink="/users" routerLinkActive="active" class="slide-in" *ngIf="canAccess('users')">
+        <mat-icon>manage_accounts</mat-icon>
+        <span>User Management</span>
       </a>
     </mat-nav-list>
 

@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
-import { AuthService } from './core/services/auth.service';
+import { AuthService, Permission } from './core/services/auth.service';
 import { ThemeService } from './core/services/theme.service';
 
 @Component({
@@ -19,6 +19,10 @@ export class AppComponent {
 
   toggleTheme() {
     this.theme.toggle();
+  }
+
+  canAccess(perm: Permission): boolean {
+    return this.auth.hasPermission(perm);
   }
 
   logout() {

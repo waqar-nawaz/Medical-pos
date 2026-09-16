@@ -1,0 +1,214 @@
+<app-page-header title="User Management" subtitle="Manage users and their role-based access">
+  <button mat-raised-button color="primary" (click)="openModal()" *ngIf="isAdmin">
+    <mat-icon>add</mat-icon>
+    Add User
+  </button>
+</app-page-header>
+
+<mat-card class="surface panel">
+  <mat-card-content class="pb-0">
+    <div class="searchRow">
+      <mat-form-field appearance="outline" class="full">
+        <mat-label>Search users...</mat-label>
+        <mat-icon matPrefix>search</mat-icon>
+        <input matInput [(ngModel)]="q" (ngModelChange)="applyFilter()" placeholder="Name or email" />
+      </mat-form-field>
+    </div>
+  </mat-card-content>
+</mat-card>
+
+<mat-card class="users-card mt-4">
+  <mat-card-content>
+    <div class="table-responsive">
+      <table mat-table [dataSource]="filteredRows" class="users-table">
+
+        <ng-container matColumnDef="name">
+          <th mat-header-cell *matHeaderCellDef>User</th>
+          <td mat-cell *matCellDef="let u">
+            <div class="user">
+              <div class="user-avatar">{{ (u.name || '?').charAt(0).toUpperCase() }}</div>
+              <div>
+                <div class="user-name">
+                  {{ u.name }}
+                  <mat-icon class="self-badge" matTooltip="This is you" *ngIf="isMe(u)">star</mat-icon>
+                </div>
+                <div class="user-created text-muted small">Added {{ (u.createdAt | date:'dd MMM yyyy') }}</div>
+              </div>
+            </div>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="email">
+          <th mat-header-cell *matHeaderCellDef>Email</th>
+          <td mat-cell *matCellDef="let u">{{ u.email }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="role">
+          <th mat-header-cell *matHeaderCellDef>Role</th>
+          <td mat-cell *matCellDef="let u">
+            <span class="badge" [ngClass]="roleChip(u.role)">{{ roleLabel(u.role) }}</span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="permissions">
+          <th mat-header-cell *matHeaderCellDef>Access</th>
+          <td mat-cell *matCellDef="let u">
+            <div class="access-cell">
+              <span class="text-muted small">{{ permCount(u) }}</span>
+              <button mat-icon-button
+                      (click)="openPermissionModal(u)"
+                      matTooltip="Manage permissions"
+                      *ngIf="isAdmin && u.role !== 'admin'">
+                <mat-icon>tune</mat-icon>
+              </button>
+            </div>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef class="text-right">Actions</th>
+          <td mat-cell *matCellDef="let u" class="text-right">
+            <ng-container *ngIf="isAdmin">
+              <button mat-icon-button (click)="openResetModal(u)" matTooltip="Reset password">
+                <mat-icon>key</mat-icon>
+              </button>
+              <button mat-icon-button (click)="openModal(u)" matTooltip="Edit">
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button mat-icon-button color="warn" (click)="remove(u)" matTooltip="Delete" *ngIf="!isMe(u)">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </ng-container>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+      </table>
+
+      <div class="empty-row" *ngIf="filteredRows.length === 0">
+        <mat-icon>manage_accounts</mat-icon>
+        <p>No users found</p>
+        <button mat-stroked-button color="primary" (click)="openModal()" *ngIf="isAdmin">
+          <mat-icon>add</mat-icon>
+          Add First User
+        </button>
+      </div>
+    </div>
+  </mat-card-content>
+</mat-card>
+
+<!-- Add/Edit User Modal -->
+<ng-template #userDialog>
+  <h2 mat-dialog-title>
+    <mat-icon>{{ editing ? 'edit' : 'person_add' }}</mat-icon>
+    {{ editing ? 'Edit User' : 'Add New User' }}
+  </h2>
+  <mat-dialog-content>
+    <form [formGroup]="form" class="user-form">
+      <div class="form-row">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Full Name *</mat-label>
+          <input matInput formControlName="name" placeholder="Enter full name" required />
+          <mat-icon matPrefix>person</mat-icon>
+        </mat-form-field>
+      </div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Email *</mat-label>
+          <input matInput formControlName="email" type="email" placeholder="Enter email address" required />
+          <mat-icon matPrefix>email</mat-icon>
+        </mat-form-field>
+      </div>
+
+      <div class="form-row" *ngIf="!editing">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Password *</mat-label>
+          <input matInput formControlName="password" type="password" placeholder="At least 6 characters" required />
+          <mat-icon matPrefix>lock</mat-icon>
+        </mat-form-field>
+      </div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Role</mat-label>
+          <mat-select formControlName="role">
+            <mat-option value="cashier">Cashier — limited access</mat-option>
+            <mat-option value="admin">Admin — full access</mat-option>
+          </mat-select>
+          <mat-icon matPrefix>badge</mat-icon>
+        </mat-form-field>
+      </div>
+    </form>
+  </mat-dialog-content>
+  <mat-dialog-actions>
+    <button mat-stroked-button mat-dialog-close>Cancel</button>
+    <button mat-raised-button color="primary" (click)="save()" [disabled]="form.invalid">
+      <mat-icon>{{ editing ? 'save' : 'add' }}</mat-icon>
+      {{ editing ? 'Update User' : 'Create User' }}
+    </button>
+  </mat-dialog-actions>
+</ng-template>
+
+<!-- Permissions Modal -->
+<ng-template #permissionDialog>
+  <h2 mat-dialog-title>
+    <mat-icon>manage_accounts</mat-icon>
+    Permissions
+  </h2>
+  <mat-dialog-content>
+    <p class="perm-hint">
+      Grant access for <strong>{{ editingPermissionUser?.name }}</strong> ({{ roleLabel(editingPermissionUser?.role) }}).
+    </p>
+
+    <div class="perm-actions">
+      <button mat-stroked-button color="primary" (click)="grantAll()">
+        <mat-icon>check_circle</mat-icon>
+        Grant All
+      </button>
+      <button mat-stroked-button (click)="clearAll()">
+        <mat-icon>remove_circle_outline</mat-icon>
+        Clear All
+      </button>
+    </div>
+
+    <mat-checkbox
+      *ngFor="let p of permissionItems"
+      class="perm-item"
+      [checked]="hasPerm(p.key)"
+      (change)="togglePerm(p.key)">
+      <mat-icon class="perm-icon">{{ p.icon }}</mat-icon>
+      {{ p.label }}
+    </mat-checkbox>
+  </mat-dialog-content>
+  <mat-dialog-actions>
+    <button mat-stroked-button mat-dialog-close>Cancel</button>
+    <button mat-raised-button color="primary" (click)="savePermissions()">Save Permissions</button>
+  </mat-dialog-actions>
+</ng-template>
+
+<!-- Reset Password Modal -->
+<ng-template #resetDialog>
+  <h2 mat-dialog-title>
+    <mat-icon>key</mat-icon>
+    Reset Password
+  </h2>
+  <mat-dialog-content>
+    <p class="perm-hint">
+      Set a new password for <strong>{{ editingResetUser?.name }}</strong> ({{ editingResetUser?.email }}).
+    </p>
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>New Password *</mat-label>
+      <input matInput type="password" [(ngModel)]="newPassword" placeholder="At least 6 characters" />
+      <mat-icon matPrefix>lock</mat-icon>
+    </mat-form-field>
+  </mat-dialog-content>
+  <mat-dialog-actions>
+    <button mat-stroked-button mat-dialog-close>Cancel</button>
+    <button mat-raised-button color="primary" (click)="savePassword()" [disabled]="newPassword.length < 6">
+      <mat-icon>save</mat-icon>
+      Save Password
+    </button>
+  </mat-dialog-actions>
+</ng-template>

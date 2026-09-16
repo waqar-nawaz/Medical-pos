@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS users (
   name TEXT NOT NULL,
   role TEXT NOT NULL CHECK (role IN ('admin','cashier')),
   passwordHash TEXT NOT NULL,
+  permissions TEXT NOT NULL DEFAULT '[]',
   createdAt TEXT NOT NULL,
   updatedAt TEXT NOT NULL
 );

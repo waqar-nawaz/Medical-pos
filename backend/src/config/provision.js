@@ -11,6 +11,12 @@ function provisionDatabase() {
   const schema = fs.readFileSync(schemaPath, 'utf8');
   db.exec(schema);
 
+  const userCols = db.prepare("PRAGMA table_info('users')").all().map(r => r.name);
+  if (!userCols.includes('permissions')) {
+    db.exec("ALTER TABLE users ADD COLUMN permissions TEXT NOT NULL DEFAULT '[]'");
+    console.log('  + users.permissions');
+  }
+
   const now = new Date().toISOString();
 
   const settings = db.prepare('SELECT id FROM settings WHERE id = 1').get();

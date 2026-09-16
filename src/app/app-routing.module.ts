@@ -24,6 +24,7 @@ const routes: Routes = [
       { path: 'returns', loadChildren: () => import('./modules/returns/returns.module').then(m => m.ReturnsModule) },
       { path: 'purchase-orders', loadChildren: () => import('./modules/purchase-orders/purchase-orders.module').then(m => m.PurchaseOrdersModule) },
       { path: 'settings', loadChildren: () => import('./modules/settings/settings.module').then(m => m.SettingsModule) },
+      { path: 'users', loadChildren: () => import('./modules/users/users.module').then(m => m.UsersModule) },
     ],
   },
 

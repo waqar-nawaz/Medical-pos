@@ -1,11 +1,11 @@
 const router = require('express').Router();
 const Ctrl = require('../controllers/suppliers.controller');
-const { auth } = require('../middlewares/auth.middleware');
+const { auth, requirePermission } = require('../middlewares/auth.middleware');
 
-router.get('/', auth(true), Ctrl.list);
-router.get('/:id', auth(true), Ctrl.get);
-router.post('/', auth(true), Ctrl.create);
-router.put('/:id', auth(true), Ctrl.update);
-router.delete('/:id', auth(true), Ctrl.remove);
+router.get('/', auth(true), requirePermission('suppliers'), Ctrl.list);
+router.get('/:id', auth(true), requirePermission('suppliers'), Ctrl.get);
+router.post('/', auth(true), requirePermission('suppliers'), Ctrl.create);
+router.put('/:id', auth(true), requirePermission('suppliers'), Ctrl.update);
+router.delete('/:id', auth(true), requirePermission('suppliers'), Ctrl.remove);
 
 module.exports = router;

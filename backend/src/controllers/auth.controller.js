@@ -37,8 +37,10 @@ async function login(req, res) {
       });
     }
 
+    const permissions = u.role === 'admin' ? null : JSON.parse(u.permissions || '[]');
+
     const token = jwt.sign(
-      { id: u.id, email: u.email, role: u.role, name: u.name },
+      { id: u.id, email: u.email, role: u.role, name: u.name, permissions },
       config.jwtSecret,
       { expiresIn: '12h' }
     );
@@ -46,7 +48,7 @@ async function login(req, res) {
     res.json({
       ok: true,
       token,
-      user: { id: u.id, email: u.email, role: u.role, name: u.name }
+      user: { id: u.id, email: u.email, role: u.role, name: u.name, permissions }
     });
 
   } catch (error) {
@@ -70,6 +72,9 @@ async function register(req, res) {
 
 function me(req, res) {
   const user = User.findById(req.user.id);
+  if (user) {
+    user.permissions = user.role === 'admin' ? null : user.permissions;
+  }
   res.json({ ok: true, user });
 }
 

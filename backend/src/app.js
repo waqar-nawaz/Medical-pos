@@ -10,6 +10,7 @@ const { logger } = require('./utils/logger');
 const { errorMiddleware } = require('./middlewares/error.middleware');
 
 const authRoutes = require('./routes/auth.routes');
+const usersRoutes = require('./routes/users.routes');
 const dashboardRoutes = require('./routes/dashboard.routes');
 const productRoutes = require('./routes/products.routes');
 const salesRoutes = require('./routes/sales.routes');
@@ -39,6 +40,7 @@ function createApp() {
   app.get('/health', (_req, res) => res.json({ ok: true, status: 'UP' }));
 
   app.use('/api/auth', authRoutes);
+  app.use('/api/users', usersRoutes);
   app.use('/api/dashboard', dashboardRoutes);
   app.use('/api/products', productRoutes);
   app.use('/api/suppliers', supplierRoutes);
