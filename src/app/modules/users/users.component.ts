@@ -1,10 +1,9 @@
-import { Component, OnInit, ViewChild, TemplateRef } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormBuilder, Validators } from '@angular/forms';
-import { MatDialog } from '@angular/material/dialog';
 import { ApiService } from '../../core/services/api.service';
 import { ToastService } from '../../core/services/toast.service';
-import { AuthService, ALL_PERMISSIONS } from '../../core/services/auth.service';
-import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
+import { AuthService } from '../../core/services/auth.service';
+import { ConfirmService } from '../../core/services/confirm.service';
 
 export interface PermissionItem {
   key: string;
@@ -17,10 +16,6 @@ export interface PermissionItem {
   styleUrls: ['./users.component.scss'],
 })
 export class UsersComponent implements OnInit {
-  @ViewChild('userDialog') userDialog!: TemplateRef<any>;
-  @ViewChild('permissionDialog') permissionDialog!: TemplateRef<any>;
-  @ViewChild('resetDialog') resetDialog!: TemplateRef<any>;
-
   q = '';
   rows: any[] = [];
   filteredRows: any[] = [];
@@ -29,19 +24,21 @@ export class UsersComponent implements OnInit {
   editingResetUser: any = null;
   newPassword = '';
 
-  displayedColumns = ['name', 'email', 'role', 'permissions', 'actions'];
+  userModalOpen = false;
+  permissionModalOpen = false;
+  resetModalOpen = false;
 
   permissionItems: PermissionItem[] = [
-    { key: 'dashboard', label: 'Dashboard', icon: 'dashboard' },
-    { key: 'pos', label: 'POS / New Bill', icon: 'point_of_sale' },
-    { key: 'products', label: 'Inventory', icon: 'inventory_2' },
-    { key: 'sales', label: 'Sales History', icon: 'receipt_long' },
-    { key: 'suppliers', label: 'Suppliers', icon: 'local_shipping' },
-    { key: 'customers', label: 'Customers', icon: 'people' },
-    { key: 'purchase-orders', label: 'Purchase Orders', icon: 'shopping_cart' },
-    { key: 'reports', label: 'Reports', icon: 'analytics' },
-    { key: 'settings', label: 'Settings', icon: 'settings' },
-    { key: 'users', label: 'User Management', icon: 'manage_accounts' },
+    { key: 'dashboard', label: 'Dashboard', icon: '📊' },
+    { key: 'pos', label: 'POS / New Bill', icon: '🧾' },
+    { key: 'products', label: 'Inventory', icon: '📦' },
+    { key: 'sales', label: 'Sales History', icon: '📋' },
+    { key: 'suppliers', label: 'Suppliers', icon: '🚚' },
+    { key: 'customers', label: 'Customers', icon: '👥' },
+    { key: 'purchase-orders', label: 'Purchase Orders', icon: '🛒' },
+    { key: 'reports', label: 'Reports', icon: '📈' },
+    { key: 'settings', label: 'Settings', icon: '⚙️' },
+    { key: 'users', label: 'User Management', icon: '👤' },
   ];
 
   form: any;
@@ -50,7 +47,7 @@ export class UsersComponent implements OnInit {
     private fb: FormBuilder,
     private api: ApiService,
     private toast: ToastService,
-    private dialog: MatDialog,
+    private confirm: ConfirmService,
     public auth: AuthService
   ) {
     this.form = this.fb.group({
@@ -114,7 +111,12 @@ export class UsersComponent implements OnInit {
     } else {
       this.form.reset({ name: '', email: '', password: '', role: 'cashier' });
     }
-    this.dialog.open(this.userDialog, { width: '480px', maxWidth: '98vw' });
+    this.userModalOpen = true;
+  }
+
+  closeModal() {
+    this.userModalOpen = false;
+    this.editing = null;
   }
 
   save() {
@@ -134,7 +136,7 @@ export class UsersComponent implements OnInit {
     req.subscribe({
       next: () => {
         this.toast.success(this.editing ? 'User updated successfully' : 'User created successfully');
-        this.dialog.closeAll();
+        this.closeModal();
         this.load();
       },
       error: (err) => {
@@ -149,7 +151,12 @@ export class UsersComponent implements OnInit {
       return;
     }
     this.editingPermissionUser = user;
-    this.dialog.open(this.permissionDialog, { width: '520px', maxWidth: '98vw' });
+    this.permissionModalOpen = true;
+  }
+
+  closePermissionModal() {
+    this.permissionModalOpen = false;
+    this.editingPermissionUser = null;
   }
 
   hasPerm(perm: string): boolean {
@@ -186,7 +193,7 @@ export class UsersComponent implements OnInit {
     }).subscribe({
       next: () => {
         this.toast.success('Permissions updated successfully');
-        this.dialog.closeAll();
+        this.closePermissionModal();
         this.load();
       },
       error: (err) => {
@@ -198,7 +205,12 @@ export class UsersComponent implements OnInit {
   openResetModal(user: any) {
     this.editingResetUser = user;
     this.newPassword = '';
-    this.dialog.open(this.resetDialog, { width: '420px', maxWidth: '95vw' });
+    this.resetModalOpen = true;
+  }
+
+  closeResetModal() {
+    this.resetModalOpen = false;
+    this.editingResetUser = null;
   }
 
   savePassword() {
@@ -210,7 +222,7 @@ export class UsersComponent implements OnInit {
     this.api.post<any>(`/users/${this.editingResetUser.id}/reset-password`, { password: this.newPassword }).subscribe({
       next: () => {
         this.toast.success('Password reset successfully');
-        this.dialog.closeAll();
+        this.closeResetModal();
       },
       error: (err) => {
         this.toast.error(err?.error?.message || 'Failed to reset password');
@@ -218,30 +230,25 @@ export class UsersComponent implements OnInit {
     });
   }
 
-  remove(row: any) {
+  async remove(row: any) {
     if (!this.isAdmin) return;
-    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
-      width: '400px',
-      data: {
-        title: 'Delete User',
-        message: `Are you sure you want to delete "${row.name}"? This action is permanent.`,
-        confirmText: 'Delete',
-        isDanger: true
-      }
+    const confirmed = await this.confirm.confirm({
+      title: 'Delete User',
+      message: `Are you sure you want to delete "${row.name}"? This action is permanent.`,
+      confirmText: 'Delete',
+      isDanger: true
     });
 
-    dialogRef.afterClosed().subscribe(confirmed => {
-      if (confirmed) {
-        this.api.delete<any>(`/users/${row.id}`).subscribe({
-          next: () => {
-            this.toast.success('User deleted successfully');
-            this.load();
-          },
-          error: (err) => {
-            this.toast.error(err?.error?.message || 'Failed to delete user');
-          }
-        });
-      }
-    });
+    if (confirmed) {
+      this.api.delete<any>(`/users/${row.id}`).subscribe({
+        next: () => {
+          this.toast.success('User deleted successfully');
+          this.load();
+        },
+        error: (err) => {
+          this.toast.error(err?.error?.message || 'Failed to delete user');
+        }
+      });
+    }
   }
 }

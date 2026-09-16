@@ -1,25 +1,27 @@
 <app-page-header title="Security" subtitle="Update password and account settings">
-  <button mat-stroked-button routerLink="/settings"><mat-icon>arrow_back</mat-icon>Back</button>
+  <button class="btn btn-outline" routerLink="/settings">← Back</button>
 </app-page-header>
 
-<mat-card class="surface panel">
-  <mat-card-title>Change password</mat-card-title>
-  <mat-card-content>
-    <form [formGroup]="form" class="form">
-      <mat-form-field appearance="outline" class="full">
-        <mat-label>Old password</mat-label>
-        <input matInput type="password" formControlName="oldPassword" autocomplete="current-password" />
-      </mat-form-field>
+<div class="card surface panel" style="max-width: 640px;">
+  <div class="card-head">
+    <div class="card-title">🔑 Change password</div>
+  </div>
+  <form [formGroup]="form" class="form">
+    <div class="field">
+      <label>Old password</label>
+      <input type="password" formControlName="oldPassword" autocomplete="current-password" />
+    </div>
 
-      <mat-form-field appearance="outline" class="full">
-        <mat-label>New password</mat-label>
-        <input matInput type="password" formControlName="newPassword" autocomplete="new-password" />
-        <mat-hint>Minimum 8 characters</mat-hint>
-      </mat-form-field>
+    <div class="field">
+      <label>New password</label>
+      <input type="password" formControlName="newPassword" autocomplete="new-password" />
+      <div class="field-note">Minimum 8 characters</div>
+    </div>
 
-      <button mat-raised-button color="primary" type="button" (click)="save()" [disabled]="form.invalid || loading">
-        <mat-icon>save</mat-icon>Update
+    <div style="margin-top:18px;">
+      <button class="btn" type="button" (click)="save()" [disabled]="form.invalid || loading">
+        💾 Update
       </button>
-    </form>
-  </mat-card-content>
-</mat-card>
+    </div>
+  </form>
+</div>

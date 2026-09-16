@@ -1,26 +1,24 @@
-import { Component, OnInit, ViewChild, TemplateRef } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormBuilder, Validators } from '@angular/forms';
-import { MatDialog } from '@angular/material/dialog';
 import { ApiService } from '../../core/services/api.service';
 import { ToastService } from '../../core/services/toast.service';
-import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
+import { ConfirmService } from '../../core/services/confirm.service';
 
-@Component({ 
-  templateUrl: './suppliers.component.html', 
-  styleUrls: ['./suppliers.component.scss'] 
+@Component({
+  templateUrl: './suppliers.component.html',
+  styleUrls: ['./suppliers.component.scss']
 })
 export class SuppliersComponent implements OnInit {
-  @ViewChild('supplierDialog') supplierDialog!: TemplateRef<any>;
-  
   rows: any[] = [];
   editing: any = null;
+  modalOpen = false;
   form: any;
 
   constructor(
-    private fb: FormBuilder, 
-    private api: ApiService, 
-    private toast: ToastService, 
-    private dialog: MatDialog
+    private fb: FormBuilder,
+    private api: ApiService,
+    private toast: ToastService,
+    private confirm: ConfirmService
   ) {
     this.form = this.fb.group({
       name: ['', [Validators.required, Validators.minLength(2)]],
@@ -41,7 +39,7 @@ export class SuppliersComponent implements OnInit {
       next: (r) => {
         this.rows = r.data || [];
       },
-      error: (err) => {
+      error: () => {
         this.toast.error('Failed to load suppliers');
       }
     });
@@ -49,7 +47,7 @@ export class SuppliersComponent implements OnInit {
 
   openModal(supplier?: any) {
     this.editing = supplier ?? null;
-    
+
     if (supplier) {
       this.form.patchValue({
         name: supplier.name || '',
@@ -69,8 +67,13 @@ export class SuppliersComponent implements OnInit {
         notes: ''
       });
     }
-    
-    this.dialog.open(this.supplierDialog, { width: '600px', maxWidth: '95vw' });
+
+    this.modalOpen = true;
+  }
+
+  closeModal() {
+    this.modalOpen = false;
+    this.editing = null;
   }
 
   save() {
@@ -86,7 +89,7 @@ export class SuppliersComponent implements OnInit {
     req.subscribe({
       next: () => {
         this.toast.success(this.editing ? 'Supplier updated successfully' : 'Supplier added successfully');
-        this.dialog.closeAll();
+        this.closeModal();
         this.load();
       },
       error: (err) => {
@@ -95,29 +98,24 @@ export class SuppliersComponent implements OnInit {
     });
   }
 
-  remove(supplier: any) {
-    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
-      width: '400px',
-      data: {
-        title: 'Delete Supplier',
-        message: `Are you sure you want to delete supplier "${supplier.name}"? This action cannot be undone.`,
-        confirmText: 'Delete',
-        isDanger: true
-      }
+  async remove(supplier: any) {
+    const confirmed = await this.confirm.confirm({
+      title: 'Delete Supplier',
+      message: `Are you sure you want to delete supplier "${supplier.name}"? This action cannot be undone.`,
+      confirmText: 'Delete',
+      isDanger: true
     });
 
-    dialogRef.afterClosed().subscribe(confirmed => {
-      if (confirmed) {
-        this.api.delete<any>(`/suppliers/${supplier.id}`).subscribe({
-          next: () => {
-            this.toast.success('Supplier deleted successfully');
-            this.load();
-          },
-          error: (err) => {
-            this.toast.error(err?.error?.message || 'Failed to delete supplier');
-          }
-        });
-      }
-    });
+    if (confirmed) {
+      this.api.delete<any>(`/suppliers/${supplier.id}`).subscribe({
+        next: () => {
+          this.toast.success('Supplier deleted successfully');
+          this.load();
+        },
+        error: (err) => {
+          this.toast.error(err?.error?.message || 'Failed to delete supplier');
+        }
+      });
+    }
   }
 }

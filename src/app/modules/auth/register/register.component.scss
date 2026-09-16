@@ -1,15 +1,114 @@
-.wrap{
-  height: calc(100vh - 40px);
-  display:flex;
-  align-items:center;
-  justify-content:center;
+.login-wrap {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #0f2942 0%, #145374 100%);
+  padding: 1rem;
+  box-sizing: border-box;
 }
-.card{
-  width: min(420px, 92vw);
+
+.login-card {
+  background: #fff;
+  padding: 2.5rem;
+  border-radius: 12px;
+  width: 380px;
+  max-width: 100%;
+  box-sizing: border-box;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+
+  .logo {
+    font-size: 48px;
+    line-height: 1;
+    margin-bottom: 0.75rem;
+    text-align: center;
+  }
+
+  h1 {
+    margin: 0 0 0.25rem;
+    font-size: 1.5rem;
+    color: #0f2942;
+    text-align: center;
+  }
+
+  .subtitle {
+    margin: 0 0 1.25rem;
+    color: #6b7c8f;
+    font-size: 0.85rem;
+    text-align: center;
+  }
+
+  label {
+    display: block;
+    font-size: 0.8rem;
+    color: #445;
+    margin-bottom: 0.25rem;
+    margin-top: 1rem;
+  }
+
+  input {
+    width: 100%;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid #d5dbe2;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    box-sizing: border-box;
+
+    &:focus {
+      outline: none;
+      border-color: #145374;
+    }
+  }
+
+  input.invalid {
+    border-color: #c0392b;
+  }
+
+  .field-error {
+    color: #c0392b;
+    font-size: 0.74rem;
+    margin-top: 0.25rem;
+  }
+
+  button {
+    width: 100%;
+    margin-top: 1.5rem;
+    padding: 0.7rem;
+    background: #145374;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    cursor: pointer;
+
+    &:hover {
+      background: #0f2942;
+    }
+    &:disabled {
+      opacity: 0.6;
+      cursor: default;
+    }
+  }
+
+  .row {
+    margin-top: 1rem;
+    text-align: center;
+
+    a {
+      color: #145374;
+      font-weight: 500;
+      text-decoration: none;
+      font-size: 0.8rem;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+  }
 }
-.full{ width: 100%; }
-.row{
-  margin-top: 12px;
-  text-align:center;
-  color: var(--app-muted);
+
+@media (max-width: 420px) {
+  .login-card {
+    padding: 1.75rem 1.5rem;
+  }
 }

@@ -1,36 +1,28 @@
-/* ============================================
-   PROFESSIONAL SALES HISTORY STYLES
-   ============================================ */
+/* Sales History Styles */
 
 .sales-card {
-  border-radius: 12px !important;
-  border: 1px solid rgba(0, 0, 0, 0.08) !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  padding: 20px;
+}
 
-  mat-card-header {
-    padding: 20px !important;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-  }
+.card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
 
-  mat-card-title {
-    font-size: 18px !important;
-    font-weight: 600 !important;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin: 0 !important;
-
-    mat-icon {
-      font-size: 22px;
-      width: 22px;
-      height: 22px;
-      color: #4f46e5;
-    }
-  }
-
-  mat-card-content {
-    padding: 20px !important;
-  }
+.card-title {
+  font-size: 18px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
 }
 
 /* Filters Section */
@@ -50,15 +42,9 @@
   }
 }
 
-.date-field, .payment-filter {
-  mat-icon {
-    color: #64748b;
-  }
-}
-
 .search-btn {
-  height: 56px;
   font-weight: 600;
+  height: 42px;
 
   @media (max-width: 968px) {
     grid-column: 1 / -1;
@@ -67,35 +53,21 @@
 
 /* Sales Table */
 .sales-table-wrapper {
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--border);
   border-radius: 8px;
   overflow: hidden;
 }
 
 .sales-table {
   width: 100%;
+  min-width: 620px;
 
-  th {
-    background: rgba(0, 0, 0, 0.02);
-    font-weight: 600;
-    font-size: 11px;
-    letter-spacing: 0.5px;
-    color: #64748b;
-    padding: 16px !important;
-    border-bottom: 2px solid rgba(0, 0, 0, 0.08) !important;
-  }
-
-  td {
-    padding: 16px !important;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
-  }
-
-  tr.mat-mdc-row {
+  tbody tr {
     cursor: pointer;
     transition: background-color 0.2s;
 
     &:hover {
-      background-color: rgba(79, 70, 229, 0.04);
+      background-color: var(--surface-hover);
     }
 
     &.selected-row {
@@ -107,31 +79,31 @@
 .bill-number {
   font-size: 14px;
   font-weight: 700;
-  color: #4f46e5;
+  color: var(--primary);
 }
 
 .date-time {
   font-size: 13px;
-  color: var(--app-text, #0f172a);
+  color: var(--text);
 }
 
 .customer-info {
   .customer-name {
     font-size: 14px;
     font-weight: 600;
-    color: var(--app-text, #0f172a);
+    color: var(--text);
     margin-bottom: 4px;
   }
 
   .customer-note {
     font-size: 12px;
-    color: #64748b;
+    color: var(--text-muted);
   }
 }
 
 .items-count {
   font-size: 13px;
-  color: #64748b;
+  color: var(--text-muted);
 }
 
 .amount {
@@ -149,52 +121,23 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
 
-  &.payment-cash {
-    background: rgba(16, 185, 129, 0.1);
-    color: #059669;
-  }
-
-  &.payment-card {
-    background: rgba(79, 70, 229, 0.1);
-    color: #4338ca;
-  }
-
-  &.payment-upi {
-    background: rgba(245, 158, 11, 0.1);
-    color: #d97706;
-  }
-
-  &.payment-mixed {
-    background: rgba(139, 92, 246, 0.1);
-    color: #7c3aed;
-  }
-}
-
-.view-btn {
-  font-size: 13px;
-  font-weight: 600;
-  height: 36px;
+  &.payment-cash  { background: rgba(16, 185, 129, 0.1); color: #059669; }
+  &.payment-card  { background: rgba(79, 70, 229, 0.1); color: #4338ca; }
+  &.payment-upi   { background: rgba(245, 158, 11, 0.1); color: #d97706; }
+  &.payment-mixed { background: rgba(139, 92, 246, 0.1); color: #7c3aed; }
 }
 
 /* Empty State */
 .empty-sales {
   text-align: center;
-  padding: 80px 20px;
-  color: #64748b;
-
-  mat-icon {
-    font-size: 72px;
-    width: 72px;
-    height: 72px;
-    opacity: 0.2;
-    margin-bottom: 20px;
-  }
+  padding: 60px 20px;
+  color: var(--text-muted);
 
   h3 {
     font-size: 18px;
     font-weight: 600;
-    margin: 0 0 8px 0;
-    color: var(--app-text, #0f172a);
+    margin: 12px 0 8px 0;
+    color: var(--text);
   }
 
   p {
@@ -204,48 +147,8 @@
 }
 
 /* Invoice Dialog Styles */
-.invoice-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: start;
-  padding-bottom: 20px;
-  border-bottom: 2px solid rgba(0, 0, 0, 0.08);
-  margin-bottom: 24px;
-}
-
-.invoice-info {
-  .invoice-number {
-    font-size: 20px;
-    font-weight: 700;
-    color: var(--app-text, #0f172a);
-    margin-bottom: 6px;
-  }
-
-  .invoice-date {
-    font-size: 13px;
-    color: #64748b;
-  }
-}
-
-.invoice-status {
-  .status-badge {
-    display: inline-block;
-    padding: 6px 16px;
-    border-radius: 6px;
-    font-size: 12px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-
-  .status-paid {
-    background: rgba(16, 185, 129, 0.1);
-    color: #059669;
-  }
-}
-
 .customer-details {
-  background: rgba(0, 0, 0, 0.02);
+  background: var(--surface-2);
   padding: 16px;
   border-radius: 8px;
   margin-bottom: 24px;
@@ -255,20 +158,18 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    color: #64748b;
+    color: var(--text-muted);
     margin-bottom: 12px;
   }
 
   .detail-content {
     font-size: 14px;
-    color: var(--app-text, #0f172a);
+    color: var(--text);
 
     div {
       margin-bottom: 6px;
 
-      &:last-child {
-        margin-bottom: 0;
-      }
+      &:last-child { margin-bottom: 0; }
 
       strong {
         font-weight: 600;
@@ -284,7 +185,7 @@
   .section-title {
     font-size: 14px;
     font-weight: 600;
-    color: var(--app-text, #0f172a);
+    color: var(--text);
     margin-bottom: 12px;
   }
 }
@@ -294,48 +195,20 @@
   border-collapse: collapse;
   font-size: 13px;
 
-  thead {
-    background: rgba(0, 0, 0, 0.02);
+  tbody tr {
+    border-bottom: 1px solid var(--border);
 
-    th {
-      padding: 12px;
-      text-align: left;
-      font-weight: 600;
-      color: #64748b;
-      border-bottom: 2px solid rgba(0, 0, 0, 0.08);
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
+    &:last-child { border-bottom: none; }
   }
 
-  tbody {
-    tr {
-      border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-
-      &:last-child {
-        border-bottom: none;
-      }
-    }
-
-    td {
-      padding: 12px;
-      color: var(--app-text, #0f172a);
-    }
-  }
-
-  .text-center {
-    text-align: center;
-  }
-
-  .text-right {
-    text-align: right;
-    font-weight: 600;
+  td {
+    padding: 12px;
+    color: var(--text);
   }
 }
 
 .totals-section {
-  background: rgba(0, 0, 0, 0.02);
+  background: var(--surface-2);
   padding: 16px;
   border-radius: 8px;
   margin-top: 20px;
@@ -345,85 +218,89 @@
     justify-content: space-between;
     padding: 10px 0;
     font-size: 14px;
-    color: var(--app-text, #0f172a);
+    color: var(--text);
 
     &:not(:last-child) {
-      border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+      border-bottom: 1px solid var(--border);
     }
 
-    span:first-child {
-      font-weight: 500;
-    }
+    span:first-child { font-weight: 500; }
+    span:last-child { font-weight: 600; }
 
-    span:last-child {
-      font-weight: 600;
-    }
-
-    .discount {
-      color: #ef4444;
-    }
+    .discount { color: #ef4444; }
 
     &.grand-total {
       margin-top: 8px;
       padding-top: 16px;
-      border-top: 2px solid rgba(0, 0, 0, 0.12) !important;
+      border-top: 2px solid var(--border);
       font-size: 16px;
 
-      span {
-        font-weight: 700;
-      }
-
-      span:last-child {
-        font-size: 18px;
-        color: #10b981;
-      }
+      span { font-weight: 700; }
+      span:last-child { font-size: 18px; color: #10b981; }
     }
   }
 }
 
-mat-dialog-actions {
-  padding: 16px !important;
-  border-top: 1px solid rgba(0, 0, 0, 0.08);
-
-  button {
-    margin-left: 8px;
-  }
-}
-
-/* ── Edit bill styles ─────────────────────────────────────────────────── */
+/* Edit bill styles */
 .edit-warning {
-  background: #fff3e0;
+  background: var(--warning-bg);
   border-left: 3px solid #ff9800;
   padding: 8px 12px;
   border-radius: 4px;
   font-size: 13px;
-  margin-bottom: 12px;
-  display: flex; align-items: center; gap: 6px;
+  margin: 8px 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
-.edit-items-table { width: 100%; }
 .edit-input {
-  border: 1px solid #ccc; border-radius: 4px;
-  padding: 3px 6px; font-size: 13px; text-align: center;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  padding: 3px 6px;
+  font-size: 13px;
+  text-align: center;
+  background: var(--input-bg);
+  color: var(--input-text);
 }
 .edit-totals {
   margin-top: 16px;
-  border-top: 1px solid #eee;
+  border-top: 1px solid var(--border);
   padding-top: 12px;
-  .total-row { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; }
-  .grand-total { font-size: 16px; font-weight: 700; border-top: 1px solid #eee; padding-top: 8px; margin-top: 4px; }
-  .text-danger { color: #d32f2f; }
+
+  .total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+  }
+  .grand-total {
+    font-size: 16px;
+    font-weight: 700;
+    border-top: 1px solid var(--border);
+    padding-top: 8px;
+    margin-top: 4px;
+  }
 }
 
-/* ── Ledger styles ───────────────────────────────────────────────────── */
+/* Ledger styles */
 .balance-summary {
-  display: flex; justify-content: space-between; align-items: center;
-  background: #f5f5f5; border-radius: 8px; padding: 10px 16px;
-  margin-bottom: 12px; font-size: 15px;
-  .text-danger { color: #d32f2f; }
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--surface-2);
+  border-radius: 8px;
+  padding: 10px 16px;
+  margin-bottom: 12px;
+  font-size: 15px;
 }
 .type-badge {
-  font-size: 10px; font-weight: 600; text-transform: uppercase;
-  padding: 2px 7px; border-radius: 12px; letter-spacing: .5px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 12px;
+  letter-spacing: .5px;
+
   &.type-sale       { background: #e8f5e9; color: #2e7d32; }
   &.type-payment    { background: #e3f2fd; color: #1565c0; }
   &.type-return     { background: #fff3e0; color: #e65100; }
@@ -431,3 +308,7 @@ mat-dialog-actions {
 }
 .text-success { color: #2e7d32; }
 .text-danger  { color: #d32f2f; }
+
+@media (max-width: 768px) {
+  .sales-card { padding: 12px; }
+}

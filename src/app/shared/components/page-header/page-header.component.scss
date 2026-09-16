@@ -2,16 +2,15 @@
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  padding: var(--spacing-xl) var(--spacing-lg);
-  margin-bottom: var(--spacing-xl);
-  background: var(--app-surface);
-  border: 1px solid var(--app-border);
-  border-radius: var(--app-radius);
-  box-shadow: var(--app-shadow-sm);
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.5rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
   position: relative;
   overflow: hidden;
-  animation: slideIn 0.4s ease-out;
-  
+
   &::before {
     content: '';
     position: absolute;
@@ -19,73 +18,49 @@
     top: 0;
     bottom: 0;
     width: 4px;
-    background: linear-gradient(180deg, var(--app-primary), var(--app-primary-light));
+    background: var(--primary);
   }
-  
+
   @media (max-width: 768px) {
     flex-direction: column;
     align-items: flex-start;
-    gap: var(--spacing-lg);
-    padding: var(--spacing-lg);
+    gap: 1rem;
+    padding: 1rem;
   }
 }
 
 .h {
   margin: 0;
-  font-size: 28px;
+  font-size: 1.4rem;
   font-weight: 700;
   letter-spacing: -0.5px;
-  color: var(--app-text);
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-md);
-  
+  color: var(--text);
+
   @media (max-width: 768px) {
-    font-size: 24px;
+    font-size: 1.2rem;
   }
 }
 
 .s {
-  margin: var(--spacing-xs) 0 0;
-  color: var(--app-text-secondary);
-  font-size: 14px;
-  font-weight: 400;
+  margin: 0.25rem 0 0;
+  color: var(--text-secondary);
+  font-size: 0.88rem;
   max-width: 600px;
   line-height: 1.5;
 }
 
 .actions {
   display: flex;
-  gap: var(--spacing-md);
+  gap: 0.75rem;
   flex-wrap: wrap;
   align-items: center;
-  
-  button {
-    padding: var(--spacing-sm) var(--spacing-lg) !important;
-    font-weight: 500 !important;
-    border-radius: var(--app-radius-sm) !important;
-    transition: all 0.2s ease;
-    
-    &.mat-mdc-raised-button {
-      box-shadow: var(--app-shadow-sm) !important;
-      
-      &:hover {
-        box-shadow: var(--app-shadow) !important;
-        transform: translateY(-1px);
-      }
-    }
-    
-    mat-icon {
-      margin-right: var(--spacing-xs);
-    }
-  }
-  
+
   @media (max-width: 768px) {
     width: 100%;
-    justify-content: stretch;
-    
-    button {
+
+    .btn {
       flex: 1;
+      justify-content: center;
     }
   }
 }

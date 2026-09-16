@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService, Permission } from './core/services/auth.service';
 import { ThemeService } from './core/services/theme.service';
+import { ConfirmService } from './core/services/confirm.service';
 
 @Component({
   selector: 'app-root',
@@ -10,8 +11,9 @@ import { ThemeService } from './core/services/theme.service';
 })
 export class AppComponent {
   sidebarCollapsed = false;
+  menuOpen = false;
 
-  constructor(public auth: AuthService, private router: Router, public theme: ThemeService) {
+  constructor(public auth: AuthService, private router: Router, public theme: ThemeService, private confirm: ConfirmService) {
     auth.isLoggedIn$.subscribe(isLoggedIn => {
       if (!isLoggedIn) {
         this.router.navigate(['/auth/login']);
@@ -23,6 +25,10 @@ export class AppComponent {
     this.sidebarCollapsed = !this.sidebarCollapsed;
   }
 
+  toggleMenu() {
+    this.menuOpen = !this.menuOpen;
+  }
+
   toggleTheme() {
     this.theme.toggle();
   }
@@ -31,8 +37,16 @@ export class AppComponent {
     return this.auth.hasPermission(perm);
   }
 
-  logout() {
-    this.auth.logout();
-    this.router.navigate(['/auth/login']);
+  async logout() {
+    const ok = await this.confirm.confirm({
+      title: 'Log out',
+      message: 'Are you sure you want to log out?',
+      confirmText: 'Log out',
+      isDanger: true,
+    });
+    if (ok) {
+      this.auth.logout();
+      this.router.navigate(['/auth/login']);
+    }
   }
 }

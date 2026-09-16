@@ -1,46 +1,46 @@
 <app-page-header title="Settings" subtitle="Store profile, receipt footer, GST and preferences">
-  <button mat-stroked-button routerLink="/settings/security"><mat-icon>security</mat-icon>Security</button>
+  <button class="btn btn-outline" routerLink="/settings/security">🔒 Security</button>
 </app-page-header>
 
-<mat-card class="surface panel">
-  <mat-card-title>Store settings</mat-card-title>
-  <mat-card-content>
-    <form [formGroup]="form" class="form">
-      <div class="grid2">
-        <mat-form-field appearance="outline">
-          <mat-label>Store name</mat-label>
-          <input matInput formControlName="storeName" required />
-        </mat-form-field>
-
-        <mat-form-field appearance="outline">
-          <mat-label>Phone</mat-label>
-          <input matInput formControlName="storePhone" />
-        </mat-form-field>
+<div class="card surface panel">
+  <div class="card-head">
+    <div class="card-title">⚙️ Store settings</div>
+  </div>
+  <form [formGroup]="form" class="form">
+    <div class="grid2">
+      <div class="field">
+        <label>Store name *</label>
+        <input formControlName="storeName" required />
       </div>
 
-      <mat-form-field appearance="outline" class="full">
-        <mat-label>Address</mat-label>
-        <textarea matInput rows="2" formControlName="storeAddress"></textarea>
-      </mat-form-field>
-
-      <mat-form-field appearance="outline" class="full">
-        <mat-label>Receipt footer</mat-label>
-        <textarea matInput rows="2" formControlName="receiptFooter"></textarea>
-      </mat-form-field>
-
-      <mat-form-field appearance="outline" class="full">
-        <mat-label>GST enabled</mat-label>
-        <mat-select formControlName="gstEnabled">
-          <mat-option [value]="true">Enabled</mat-option>
-          <mat-option [value]="false">Disabled</mat-option>
-        </mat-select>
-      </mat-form-field>
-
-      <div class="actions">
-        <button mat-raised-button color="primary" type="button" (click)="save()" [disabled]="form.invalid || loading">
-          <mat-icon>save</mat-icon>Save
-        </button>
+      <div class="field">
+        <label>Phone</label>
+        <input formControlName="storePhone" />
       </div>
-    </form>
-  </mat-card-content>
-</mat-card>
+    </div>
+
+    <div class="field">
+      <label>Address</label>
+      <textarea rows="2" formControlName="storeAddress"></textarea>
+    </div>
+
+    <div class="field">
+      <label>Receipt footer</label>
+      <textarea rows="2" formControlName="receiptFooter"></textarea>
+    </div>
+
+    <div class="field">
+      <label>GST enabled</label>
+      <select formControlName="gstEnabled">
+        <option [ngValue]="true">Enabled</option>
+        <option [ngValue]="false">Disabled</option>
+      </select>
+    </div>
+
+    <div class="actions" style="margin-top:18px;">
+      <button class="btn" type="button" (click)="save()" [disabled]="form.invalid || loading">
+        💾 Save
+      </button>
+    </div>
+  </form>
+</div>

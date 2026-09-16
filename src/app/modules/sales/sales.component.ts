@@ -1,5 +1,4 @@
-import { Component, OnInit, ViewChild, TemplateRef } from '@angular/core';
-import { MatDialog, MatDialogRef } from '@angular/material/dialog';
+import { Component, OnInit } from '@angular/core';
 import { FormControl } from '@angular/forms';
 import { ApiService } from '../../core/services/api.service';
 import { ReceiptService } from '../../core/services/receipt.service';
@@ -10,11 +9,6 @@ import { ToastService } from '../../core/services/toast.service';
   styleUrls: ['./sales.component.scss'],
 })
 export class SalesComponent implements OnInit {
-  @ViewChild('invoiceDialog')  invoiceDialog!:  TemplateRef<any>;
-  @ViewChild('editDialog')     editDialog!:     TemplateRef<any>;
-  @ViewChild('whatsappDialog') whatsappDialog!: TemplateRef<any>;
-  @ViewChild('ledgerDialog')   ledgerDialog!:   TemplateRef<any>;
-
   rows: any[]         = [];
   filteredRows: any[] = [];
   selected: any       = null;
@@ -26,13 +20,16 @@ export class SalesComponent implements OnInit {
   to:   any = Date;
   paymentFilter = '';
 
-  displayedColumns = ['billNo','dateTime','customer','items','amount','payment','actions'];
-
   // ── Edit-bill state ───────────────────────────────────────────────────────
   editItems: any[]     = [];
   editBillDiscount     = new FormControl(0);
   editAmountPaid       = new FormControl<number|null>(null);
-  editDialogRef?: MatDialogRef<any>;
+
+  // Modal states
+  invoiceModalOpen = false;
+  editModalOpen = false;
+  whatsappModalOpen = false;
+  ledgerModalOpen = false;
 
   // ── Ledger ───────────────────────────────────────────────────────────────
   ledgerData: any = null;
@@ -40,9 +37,21 @@ export class SalesComponent implements OnInit {
   constructor(
     private api: ApiService,
     private receipt: ReceiptService,
-    private toast: ToastService,
-    private dialog: MatDialog
+    private toast: ToastService
   ) { this.pickCurrentWeek(); }
+
+  get fromInput(): string {
+    return this.from ? this.formatDate(this.from) : '';
+  }
+  set fromInput(v: string) {
+    this.from = v ? new Date(v + 'T00:00:00') : null;
+  }
+  get toInput(): string {
+    return this.to ? this.formatDate(this.to) : '';
+  }
+  set toInput(v: string) {
+    this.to = v ? new Date(v + 'T23:59:59') : null;
+  }
 
   pickCurrentWeek() {
     const today = new Date();
@@ -78,10 +87,14 @@ export class SalesComponent implements OnInit {
 
   open(row: any) {
     this.api.get<any>(`/sales/${row.id}`).subscribe({
-      next:  r => { this.selected = r.data || null; },
+      next:  r => { this.selected = r.data || null; this.invoiceModalOpen = true; },
       error: () => this.toast.error('Failed to load invoice'),
     });
-    this.dialog.open(this.invoiceDialog, { width: '700px', maxWidth: '95vw' });
+  }
+
+  closeInvoice() {
+    this.invoiceModalOpen = false;
+    this.selected = null;
   }
 
   // ── Edit Bill ─────────────────────────────────────────────────────────────
@@ -101,10 +114,15 @@ export class SalesComponent implements OnInit {
             : 0
         );
         this.editAmountPaid.setValue(null);
-        this.editDialogRef = this.dialog.open(this.editDialog, { width: '800px', maxWidth: '98vw', disableClose: true });
+        this.editModalOpen = true;
       },
       error: () => this.toast.error('Failed to load invoice for editing'),
     });
+  }
+
+  closeEdit() {
+    this.editModalOpen = false;
+    this.selected = null;
   }
 
   editTotals() {
@@ -148,9 +166,9 @@ export class SalesComponent implements OnInit {
     };
 
     this.api.put<any>(`/sales/${this.selected.id}`, body).subscribe({
-      next: r => {
+      next: () => {
         this.toast.success('Bill updated successfully');
-        this.editDialogRef?.close();
+        this.closeEdit();
         this.load();
       },
       error: err => this.toast.error(err?.error?.message || 'Failed to update bill'),
@@ -162,10 +180,15 @@ export class SalesComponent implements OnInit {
     this.api.get<any>(`/customers/${customerId}/ledger`).subscribe({
       next: r => {
         this.ledgerData = r.data;
-        this.dialog.open(this.ledgerDialog, { width: '700px', maxWidth: '95vw' });
+        this.ledgerModalOpen = true;
       },
       error: () => this.toast.error('Failed to load customer ledger'),
     });
+  }
+
+  closeLedger() {
+    this.ledgerModalOpen = false;
+    this.ledgerData = null;
   }
 
   // ── Print ─────────────────────────────────────────────────────────────────
@@ -188,13 +211,17 @@ export class SalesComponent implements OnInit {
   // ── WhatsApp ──────────────────────────────────────────────────────────────
   openWhatsappDialog() {
     this.whatsappPhone = this.selected?.customerPhone || '';
-    this.dialog.open(this.whatsappDialog, { width: '400px' });
+    this.whatsappModalOpen = true;
+  }
+
+  closeWhatsapp() {
+    this.whatsappModalOpen = false;
   }
 
   sendWhatsapp() {
     if (!this.whatsappPhone) { this.toast.warning('Please enter a phone number'); return; }
     this.whatsapp(this.whatsappPhone);
-    this.dialog.closeAll();
+    this.closeWhatsapp();
   }
 
   whatsapp(phone: string) {

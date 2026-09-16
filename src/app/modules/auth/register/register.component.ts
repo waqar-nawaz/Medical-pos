@@ -9,19 +9,19 @@ import { ApiService } from '../../../core/services/api.service';
 })
 export class RegisterComponent {
   loading = false;
+  submitted = false;
   form: any;
-
-  
 
   constructor(private fb: FormBuilder, private api: ApiService, private router: Router) {
     this.form = this.fb.group({
-    name: ['', [Validators.required, Validators.minLength(2)]],
-    email: ['', [Validators.required, Validators.email]],
-    password: ['', [Validators.required, Validators.minLength(8)]],
-  });
+      name: ['', [Validators.required, Validators.minLength(2)]],
+      email: ['', [Validators.required, Validators.email]],
+      password: ['', [Validators.required, Validators.minLength(8)]],
+    });
   }
 
   submit() {
+    this.submitted = true;
     if (this.form.invalid || this.loading) return;
     this.loading = true;
     this.api.post<any>('/auth/register', this.form.value).subscribe({

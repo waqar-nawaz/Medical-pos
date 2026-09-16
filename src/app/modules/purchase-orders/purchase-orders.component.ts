@@ -1,9 +1,8 @@
-import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormBuilder, Validators } from '@angular/forms';
 import { ApiService } from '../../core/services/api.service';
 import { ToastService } from '../../core/services/toast.service';
-import { MatDialog } from '@angular/material/dialog';
-import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
+import { ConfirmService } from '../../core/services/confirm.service';
 
 type Line = { productId: number; qty: number; cost?: number };
 
@@ -12,20 +11,18 @@ type Line = { productId: number; qty: number; cost?: number };
   styleUrls: ['./purchase-orders.component.scss'],
 })
 export class PurchaseOrdersComponent implements OnInit {
-  @ViewChild('supplierDialog') supplierDialog!: TemplateRef<any>;
   rows: any[] = [];
   suppliers: any[] = [];
   products: any[] = [];
 
   lines: Line[] = [];
   form: any;
+  modalOpen = false;
 
- 
-
-  constructor(private fb: FormBuilder, private api: ApiService, private toast: ToastService, private dialog: MatDialog) {
-     this.form = this.fb.group({
-    supplierId: [null, Validators.required],
-  });
+  constructor(private fb: FormBuilder, private api: ApiService, private toast: ToastService, private confirm: ConfirmService) {
+    this.form = this.fb.group({
+      supplierId: [null, Validators.required],
+    });
   }
 
   ngOnInit() {
@@ -63,44 +60,36 @@ export class PurchaseOrdersComponent implements OnInit {
         this.lines = [];
         this.addLine();
         this.form.reset({ supplierId: null });
+        this.closeModal();
         this.load();
       },
     });
   }
 
-  receive(row: any) {
-    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
-      width: '400px',
-      data: {
-        title: 'Receive Order',
-        message: 'Mark this order as RECEIVED and update stock levels?',
-        confirmText: 'Mark Received',
-      }
+  async receive(row: any) {
+    const confirmed = await this.confirm.confirm({
+      title: 'Receive Order',
+      message: 'Mark this order as RECEIVED and update stock levels?',
+      confirmText: 'Mark Received',
     });
 
-    dialogRef.afterClosed().subscribe(confirmed => {
-      if (confirmed) {
-        this.api.post<any>(`/purchase-orders/${row.id}/receive`, {}).subscribe({
-          next: () => { this.toast.success('Received'); this.load(); },
-        });
-      }
-    });
+    if (confirmed) {
+      this.api.post<any>(`/purchase-orders/${row.id}/receive`, {}).subscribe({
+        next: () => { this.toast.success('Received'); this.load(); },
+      });
+    }
   }
 
   productName(id: number) {
     return this.products.find(p => p.id === id)?.name || String(id);
   }
 
-  openModal(customer?: any) {
-      this.form.reset({
-        name: '',
-        phone: '',
-        email: '',
-        address: '',
-        loyaltyPoints: ''
-      });
-
-    this.dialog.open(this.supplierDialog, { width: '600px', maxWidth: '95vw' });
+  openModal() {
+    this.modalOpen = true;
+    this.form.reset({ supplierId: null });
   }
 
+  closeModal() {
+    this.modalOpen = false;
+  }
 }

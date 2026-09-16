@@ -1,33 +1,21 @@
-<div class="wrap">
-  <mat-card class="card surface" role="region" aria-label="Login form">
-    <mat-card-header>
-      <mat-card-title>Welcome back</mat-card-title>
-      <mat-card-subtitle>Sign in to continue</mat-card-subtitle>
-    </mat-card-header>
+<div class="login-wrap">
+  <form class="login-card" (ngSubmit)="submit()" role="region" aria-label="Login form">
+    <div class="logo">⚕️</div>
+    <h1>Medical POS</h1>
+    <p class="subtitle">Sign in to continue</p>
 
-    <mat-card-content>
-      <form [formGroup]="form" (ngSubmit)="submit()">
-        <mat-form-field appearance="outline" class="full">
-          <mat-label>Email</mat-label>
-          <input matInput formControlName="email" autocomplete="username" required />
-          <mat-error *ngIf="form.controls.email.invalid">Enter a valid email</mat-error>
-        </mat-form-field>
+    <label>Email <span class="required-mark">*</span></label>
+    <input type="email" formControlName="email" autocomplete="username" [class.invalid]="submitted && form.controls.email.invalid" />
+    <div class="field-error" *ngIf="submitted && form.controls.email.invalid">Enter a valid email</div>
 
-        <mat-form-field appearance="outline" class="full">
-          <mat-label>Password</mat-label>
-          <input matInput type="password" formControlName="password" autocomplete="current-password" required />
-          <mat-error *ngIf="form.controls.password.invalid">Password is required</mat-error>
-        </mat-form-field>
+    <label>Password <span class="required-mark">*</span></label>
+    <input type="password" formControlName="password" autocomplete="current-password" [class.invalid]="submitted && form.controls.password.invalid" />
+    <div class="field-error" *ngIf="submitted && form.controls.password.invalid">Password is required</div>
 
-        <button mat-raised-button color="primary" class="full" [disabled]="loading || form.invalid">
-          <mat-icon>login</mat-icon>
-          <span>Sign in</span>
-        </button>
-      </form>
+    <button type="submit" [disabled]="loading">{{ loading ? 'Signing in…' : 'Sign in' }}</button>
 
-      <div class="row">
-        <a routerLink="/auth/register">Create account</a>
-      </div>
-    </mat-card-content>
-  </mat-card>
+    <div class="row">
+      <a routerLink="/auth/register">Create account</a>
+    </div>
+  </form>
 </div>

@@ -1,15 +1,11 @@
-import { Component, OnInit, ViewChild, TemplateRef } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormBuilder, Validators } from '@angular/forms';
-import { MatDialog } from '@angular/material/dialog';
 import { ApiService } from '../../core/services/api.service';
 import { ToastService } from '../../core/services/toast.service';
-import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
+import { ConfirmService } from '../../core/services/confirm.service';
 
 @Component({ templateUrl: './products.component.html', styleUrls: ['./products.component.scss'] })
 export class ProductsComponent implements OnInit {
-  @ViewChild('productDialog') productDialog!: TemplateRef<any>;
-  @ViewChild('qtyDialog') qtyDialog!: TemplateRef<any>;
-
   categories = ['Tablet', 'Capsule', 'Injection', 'Syrup', 'Cream', 'Drops', 'Ointment', 'Powder', 'Strip', 'Other'];
   categoryFilter = '';
   stockFilter = '';
@@ -23,11 +19,11 @@ export class ProductsComponent implements OnInit {
   editing: any = null;
   editingProduct: any = null;
   newQty: number = 0;
+  productModalOpen = false;
+  qtyModalOpen = false;
   form: any;
 
-  displayedColumns = ['name', 'category', 'shelf', 'batchNo', 'stock', 'price', 'expiryDate', 'status', 'actions'];
-
-  constructor(private fb: FormBuilder, private api: ApiService, private toast: ToastService, private dialog: MatDialog) {
+  constructor(private fb: FormBuilder, private api: ApiService, private toast: ToastService, private confirm: ConfirmService) {
     this.form = this.fb.group({
       name: ['', [Validators.required, Validators.minLength(2)]],
       sku: [''],
@@ -52,7 +48,7 @@ export class ProductsComponent implements OnInit {
   }
 
   ngOnInit() {
-    this.createShelfArray()
+    this.createShelfArray();
     this.load();
     this.api.get<any>('/suppliers').subscribe(r => this.suppliers = r.data || []);
   }
@@ -103,13 +99,23 @@ export class ProductsComponent implements OnInit {
     } else {
       this.form.reset({ name: '', sku: '', barcode: '', category: 'Tablet', batchNo: '', unit: 'pcs', price: 0, cost: 0, gstRate: 0, stockQty: 0, reorderLevel: 10, expiryDate: '', supplierId: null, isActive: true, productDiscount: 0, unitsPerStrip: 1, stripsPerBox: 1, packagingUnit: 'unit' });
     }
-    this.dialog.open(this.productDialog, { width: '720px', maxWidth: '98vw' });
+    this.productModalOpen = true;
+  }
+
+  closeModal() {
+    this.productModalOpen = false;
+    this.editing = null;
   }
 
   openQtyModal(row: any) {
     this.editingProduct = row;
     this.newQty = row.stockQty;
-    this.dialog.open(this.qtyDialog, { width: '400px', maxWidth: '95vw' });
+    this.qtyModalOpen = true;
+  }
+
+  closeQtyModal() {
+    this.qtyModalOpen = false;
+    this.editingProduct = null;
   }
 
   save() {
@@ -117,13 +123,14 @@ export class ProductsComponent implements OnInit {
       this.toast.warning('Please fill all required fields correctly');
       return;
     }
+    const body = { ...this.form.value, supplierId: this.form.value.supplierId || null, packagingUnit: this.form.value.packagingUnit || 'unit' };
     const req = this.editing
-      ? this.api.put<any>(`/products/${this.editing.id}`, this.form.value)
-      : this.api.post<any>('/products', this.form.value);
+      ? this.api.put<any>(`/products/${this.editing.id}`, body)
+      : this.api.post<any>('/products', body);
     req.subscribe({
       next: () => {
         this.toast.success(this.editing ? 'Product updated successfully' : 'Product added successfully');
-        this.dialog.closeAll();
+        this.closeModal();
         this.load();
       },
       error: (err) => {
@@ -143,7 +150,7 @@ export class ProductsComponent implements OnInit {
     ).subscribe({
       next: () => {
         this.toast.success('Quantity updated successfully');
-        this.dialog.closeAll();
+        this.closeQtyModal();
         this.load();
       },
       error: (err) => {
@@ -152,32 +159,26 @@ export class ProductsComponent implements OnInit {
     });
   }
 
-  remove(row: any) {
-    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
-      width: '400px',
-      data: {
-        title: 'Delete Product',
-        message: `Are you sure you want to delete "${row.name}"? This action is permanent.`,
-        confirmText: 'Delete',
-        isDanger: true
-      }
+  async remove(row: any) {
+    const confirmed = await this.confirm.confirm({
+      title: 'Delete Product',
+      message: `Are you sure you want to delete "${row.name}"? This action is permanent.`,
+      confirmText: 'Delete',
+      isDanger: true
     });
 
-    dialogRef.afterClosed().subscribe(confirmed => {
-      if (confirmed) {
-        this.api.delete<any>(`/products/${row.id}`).subscribe({
-          next: () => {
-            this.toast.success('Product deleted successfully');
-            this.load();
-          },
-          error: (err) => {
-            this.toast.error(err?.error?.message || 'Failed to delete product');
-          }
-        });
-      }
-    });
+    if (confirmed) {
+      this.api.delete<any>(`/products/${row.id}`).subscribe({
+        next: () => {
+          this.toast.success('Product deleted successfully');
+          this.load();
+        },
+        error: (err) => {
+          this.toast.error(err?.error?.message || 'Failed to delete product');
+        }
+      });
+    }
   }
-
 
   createShelfArray() {
     const rows = 'ABCDEFGHIJKLM'; // 13 rows
@@ -188,6 +189,5 @@ export class ProductsComponent implements OnInit {
         this.shelves.push(`${rows[i]}${col}`);
       }
     }
-
   }
 }

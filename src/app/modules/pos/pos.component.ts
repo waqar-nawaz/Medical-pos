@@ -5,8 +5,7 @@ import { ReceiptService } from '../../core/services/receipt.service';
 import { of } from 'rxjs';
 import { debounceTime, distinctUntilChanged, switchMap, catchError } from 'rxjs/operators';
 import { ToastService } from '../../core/services/toast.service';
-import { MatDialog } from '@angular/material/dialog';
-import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
+import { ConfirmService } from '../../core/services/confirm.service';
 
 type CartItem = {
   productId: number;
@@ -66,7 +65,7 @@ export class PosComponent implements OnInit {
     private api: ApiService,
     private receipt: ReceiptService,
     private toast: ToastService,
-    private dialog: MatDialog
+    private confirm: ConfirmService
   ) { }
 
   ngOnInit() {
@@ -197,27 +196,22 @@ export class PosComponent implements OnInit {
     if (idx >= 0) { this.cart.splice(idx, 1); this.toast.info('Item removed'); }
   }
 
-  clearCart() {
-    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
-      width: '400px',
-      data: {
-        title: 'Clear Cart',
-        message: 'Are you sure you want to remove all items from the cart?',
-        confirmText: 'Clear All',
-        isDanger: true
-      }
+  async clearCart() {
+    const confirmed = await this.confirm.confirm({
+      title: 'Clear Cart',
+      message: 'Are you sure you want to remove all items from the cart?',
+      confirmText: 'Clear All',
+      isDanger: true,
     });
 
-    dialogRef.afterClosed().subscribe(confirmed => {
-      if (confirmed) {
-        this.cart = [];
-        this.clearCustomer();
-        this.discountCtrl.setValue(0);
-        this.billDiscountCtrl.setValue(0);
-        this.amountPaidCtrl.setValue(null);
-        this.toast.info('Cart cleared');
-      }
-    });
+    if (confirmed) {
+      this.cart = [];
+      this.clearCustomer();
+      this.discountCtrl.setValue(0);
+      this.billDiscountCtrl.setValue(0);
+      this.amountPaidCtrl.setValue(null);
+      this.toast.info('Cart cleared');
+    }
   }
 
   totals() {

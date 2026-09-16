@@ -1,0 +1,14 @@
+<div class="modal-backdrop" *ngIf="open">
+  <div class="modal-card confirm-modal" style="max-width: 420px;">
+    <h2 [class.text-danger]="options?.isDanger">
+      <span *ngIf="options?.isDanger">⚠ </span>{{ options?.title }}
+    </h2>
+    <p style="color: var(--text-secondary); font-size: 0.9rem; margin: 0.25rem 0 0; white-space: pre-line;">
+      {{ options?.message }}
+    </p>
+    <div class="modal-actions">
+      <button class="btn btn-outline" (click)="cancel()">{{ options?.cancelText || 'Cancel' }}</button>
+      <button class="btn" [class.btn-danger]="options?.isDanger" (click)="ok()">{{ options?.confirmText || 'Confirm' }}</button>
+    </div>
+  </div>
+</div>
