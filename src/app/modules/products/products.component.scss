@@ -18,7 +18,7 @@
 .tableWrap { margin-top: 10px; overflow: auto; }
 .name { font-weight: 700; }
 .muted { color: var(--text-muted); font-size: 12px; }
-.bad { color: #fecaca; font-weight: 800; }
+.bad { color: var(--danger); font-weight: 800; }
 
 @media (max-width: 1100px) {
   .layout { grid-template-columns: 1fr; }
@@ -52,7 +52,7 @@
 .chip-green  { background: var(--status-success-bg, #d1fae5); color: var(--status-success-text, #065f46); }
 .chip-amber  { background: var(--status-warning-bg, #fef3c7); color: var(--status-warning-text, #92400e); }
 .chip-red    { background: var(--status-danger-bg, #fee2e2); color: var(--status-danger-text, #991b1b); }
-.expiring-cell { color: #d97706; font-weight: 600; }
+.expiring-cell { color: var(--warning); font-weight: 600; }
 
 .modal-form .form-grid {
   display: grid;
@@ -72,27 +72,27 @@
 
 /* Badges */
 .badge-category {
-  background: #eef2ff;
-  color: #3f51b5;
+  background: var(--info-bg);
+  color: var(--info);
 }
 .badge-stock {
-  background: #e8f5e9;
-  color: #2e7d32;
+  background: var(--success-bg);
+  color: var(--success);
 }
 .badge-stock.low {
-  background: #ffebee;
-  color: #c62828;
+  background: var(--danger-bg);
+  color: var(--danger);
 }
 
 /* Price */
 .price {
   font-weight: 600;
-  color: #2e7d32;
+  color: var(--success);
 }
 
 /* Expiry */
 .expiring {
-  color: #d32f2f;
+  color: var(--danger);
   font-weight: 600;
 }
 

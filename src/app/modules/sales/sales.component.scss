@@ -301,13 +301,13 @@
   border-radius: 12px;
   letter-spacing: .5px;
 
-  &.type-sale       { background: #e8f5e9; color: #2e7d32; }
-  &.type-payment    { background: #e3f2fd; color: #1565c0; }
-  &.type-return     { background: #fff3e0; color: #e65100; }
-  &.type-adjustment { background: #f3e5f5; color: #6a1b9a; }
+  &.type-sale       { background: var(--success-bg); color: var(--success); }
+  &.type-payment    { background: var(--info-bg);    color: var(--info); }
+  &.type-return     { background: var(--warning-bg); color: var(--warning); }
+  &.type-adjustment { background: var(--danger-bg);  color: var(--danger); }
 }
-.text-success { color: #2e7d32; }
-.text-danger  { color: #d32f2f; }
+.text-success { color: var(--success); }
+.text-danger  { color: var(--danger); }
 
 @media (max-width: 768px) {
   .sales-card { padding: 12px; }

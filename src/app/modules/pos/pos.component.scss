@@ -489,7 +489,11 @@
   border-radius: 10px;
   letter-spacing: .5px;
   width: 100%;
-  background: linear-gradient(135deg, var(--pos-teal), #0a7a70);
+  background: var(--primary) !important;
+  box-shadow: var(--shadow);
+}
+.generate-bill-btn:hover {
+  background: var(--primary-dark) !important;
 }
 
 .clear-cart-btn {

@@ -32,8 +32,8 @@
       <div class="notes-content">{{ customer.loyaltyPoints }}</div>
     </div>
     <div class="customer-notes" *ngIf="customer.balance > 0">
-      <div class="notes-label" style="color:#d32f2f">Outstanding Balance:</div>
-      <div class="notes-content" style="color:#d32f2f;font-weight:600">₹{{ customer.balance | number:'1.2-2' }}</div>
+      <div class="notes-label" style="color:var(--danger)">Outstanding Balance:</div>
+      <div class="notes-content" style="color:var(--danger);font-weight:600">₹{{ customer.balance | number:'1.2-2' }}</div>
     </div>
   </div>
 </div>
