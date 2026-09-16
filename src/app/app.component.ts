@@ -9,12 +9,18 @@ import { ThemeService } from './core/services/theme.service';
   styleUrls: ['./app.component.scss'],
 })
 export class AppComponent {
+  sidebarCollapsed = false;
+
   constructor(public auth: AuthService, private router: Router, public theme: ThemeService) {
     auth.isLoggedIn$.subscribe(isLoggedIn => {
       if (!isLoggedIn) {
         this.router.navigate(['/auth/login']);
       }
     });
+  }
+
+  toggleSidebar() {
+    this.sidebarCollapsed = !this.sidebarCollapsed;
   }
 
   toggleTheme() {

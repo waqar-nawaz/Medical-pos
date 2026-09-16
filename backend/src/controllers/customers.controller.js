@@ -4,7 +4,7 @@ const Sales    = require('../models/sales.model');
 
 const schema = z.object({
   name:          z.string().min(2),
-  phone:         z.string().optional().nullable(),
+  phone:         z.coerce.string().optional().nullable(),
   email:         z.string().email().optional().nullable(),
   address:       z.string().optional().nullable(),
   notes:         z.string().optional().nullable(),

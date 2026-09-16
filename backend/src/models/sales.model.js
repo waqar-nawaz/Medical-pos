@@ -352,13 +352,19 @@ function list({ from, to, q = '', limit = 50, offset = 0 }) {
 // ─────────────────────────────────────────────────────────────────────────────
 function getById(id) {
   const db   = getDb();
+  const { hasBalance } = getSchemaInfo(db);
   const sale = db.prepare(`
-    SELECT s.*, c.name AS customerName, c.phone AS customerPhone, c.balance AS customerBalance
+    SELECT s.*, c.name AS customerName, c.phone AS customerPhone${hasBalance ? ', c.balance AS customerBalance' : ''}
     FROM sales s LEFT JOIN customers c ON c.id = s.customerId WHERE s.id = ?
   `).get(id);
   if (!sale) return null;
+  const pCols = db.prepare("PRAGMA table_info('products')").all().map(r => r.name);
+  const extra = [];
+  if (pCols.includes('unitsPerStrip')) extra.push('p.unitsPerStrip');
+  if (pCols.includes('stripsPerBox')) extra.push('p.stripsPerBox');
+  if (pCols.includes('packagingUnit')) extra.push('p.packagingUnit');
   const items = db.prepare(`
-    SELECT si.*, p.name AS productName, p.barcode, p.unitsPerStrip, p.stripsPerBox
+    SELECT si.*, p.name AS productName, p.barcode${extra.length ? ', ' + extra.join(', ') : ''}
     FROM sale_items si JOIN products p ON p.id = si.productId
     WHERE si.saleId = ? ORDER BY si.id ASC
   `).all(id);

@@ -2,14 +2,19 @@
 
 <ng-container *ngIf="auth.isLoggedIn$ | async; else authView">
 <mat-sidenav-container class="shell">
-  <mat-sidenav #snav class="side" mode="side" opened>
+  <mat-sidenav #snav class="side" mode="side" opened [ngClass]="{'collapsed': sidebarCollapsed}">
     <!-- Brand Header -->
     <div class="brand">
       <div class="logo" aria-hidden="true">⚕️</div>
-      <div>
+      <div class="brand-text">
         <div class="title">Medical POS</div>
         <div class="sub">Professional Edition</div>
       </div>
+      <button mat-icon-button class="collapse-btn" (click)="toggleSidebar()"
+              [attr.aria-label]="sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'"
+              matTooltip="{{ sidebarCollapsed ? 'Expand' : 'Collapse' }}">
+        <mat-icon>{{ sidebarCollapsed ? 'chevron_right' : 'chevron_left' }}</mat-icon>
+      </button>
     </div>
 
     <!-- Main Navigation -->
@@ -70,10 +75,6 @@
   <mat-sidenav-content class="content">
     <!-- Top Toolbar -->
     <mat-toolbar class="top" role="banner">
-      <button mat-icon-button (click)="snav.toggle()" aria-label="Toggle navigation">
-        <mat-icon>menu</mat-icon>
-      </button>
-
       <span class="spacer"></span>
 
       <!-- Theme Toggle -->
