@@ -29,6 +29,7 @@
 /* ── Cards ─────────────────────────────────────────────────────── */
 .cart-card, .items-card, .summary-card {
   height: fit-content;
+  padding: 18px;
 
   .card-head {
     display: flex;
@@ -36,7 +37,7 @@
     justify-content: space-between;
     gap: 8px;
     padding: 14px 18px;
-    margin: 0;
+    margin: -18px -18px 16px;
     background: linear-gradient(135deg, var(--pos-navy) 0%, #1e3a6e 100%);
     border-bottom: none;
     border-radius: 12px 12px 0 0;
@@ -489,11 +490,13 @@
   border-radius: 10px;
   letter-spacing: .5px;
   width: 100%;
-  background: var(--primary) !important;
+  background: var(--btn-primary-bg) !important;
+  color: #fff !important;
   box-shadow: var(--shadow);
 }
 .generate-bill-btn:hover {
-  background: var(--primary-dark) !important;
+  background: var(--btn-primary-bg-hover) !important;
+  color: #fff !important;
 }
 
 .clear-cart-btn {

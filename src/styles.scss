@@ -11,6 +11,10 @@
   --accent:         #2b8cbe;
   --accent-hover:   #22739e;
 
+  /* solid button stays LMS navy in both themes */
+  --btn-primary-bg:       #145374;
+  --btn-primary-bg-hover: #0f2942;
+
   --bg:             #f4f6f8;
   --surface:        #ffffff;
   --surface-raised: #ffffff;
@@ -106,6 +110,10 @@
   --primary-light:  #82c6ee;
   --accent:         #3f9ece;
   --accent-hover:   #2b8cbe;
+
+  /* solid button stays LMS navy in both themes */
+  --btn-primary-bg:       #145374;
+  --btn-primary-bg-hover: #0f2942;
 
   --bg:             #0f1720;
   --surface:        #1a2330;
@@ -312,7 +320,7 @@ button {
   justify-content: center;
   gap: 0.4rem;
   padding: 0.5rem 1rem;
-  background: var(--primary);
+  background: var(--btn-primary-bg);
   color: #fff;
   border: none;
   border-radius: var(--radius-sm);
@@ -322,26 +330,27 @@ button {
   cursor: pointer;
   transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.05s ease;
 }
-.btn:hover { background: var(--primary-dark); }
+.btn:hover,
+.btn:active { background: var(--btn-primary-bg-hover); color: #fff; }
 .btn:active { transform: translateY(1px); }
-.btn:disabled { opacity: 0.5; cursor: default; transform: none; }
+.btn:disabled { opacity: 0.5; cursor: default; transform: none; color: #fff; }
 .btn:focus-visible {
   outline: 2px solid var(--primary);
   outline-offset: 2px;
 }
 
-.btn-primary { background: var(--primary); color: #fff; }
-.btn-primary:hover { background: var(--primary-dark); }
+.btn-primary { background: var(--btn-primary-bg); color: #fff; }
+.btn-primary:hover { background: var(--btn-primary-bg-hover); color: #fff; }
 
 .btn-outline {
-  background: transparent;
-  color: var(--primary);
-  border: 1px solid var(--primary);
+  background: var(--surface);
+  color: #145374;
+  border: 1px solid #145374;
 }
 .btn-outline:hover {
-  background: rgba(20, 83, 116, 0.08);
-  border-color: var(--primary-dark);
-  color: var(--primary-dark);
+  background: #eaf1f6;
+  border-color: #145374;
+  color: #145374;
 }
 html.theme-dark .btn-outline,
 .theme-dark .btn-outline {
@@ -351,20 +360,17 @@ html.theme-dark .btn-outline,
 html.theme-dark .btn-outline:hover,
 .theme-dark .btn-outline:hover {
   background: rgba(95, 180, 229, 0.12);
-  border-color: #7db4e0;
-  color: #7db4e0;
+  border-color: #5fb4e5;
+  color: #5fb4e5;
 }
 
 .btn-danger {
-  background: var(--danger);
+  background: #c0392b;
   color: #fff;
   border: none;
 }
-.btn-danger:hover { background: #962d22; }
-html.theme-dark .btn-danger,
-.theme-dark .btn-danger { background: #c0392b; color: #fff; }
-html.theme-dark .btn-danger:hover,
-.theme-dark .btn-danger:hover { background: #9a2f22; }
+.btn-danger:hover,
+.btn-danger:active { background: #962d22; color: #fff; }
 
 .btn-sm {
   padding: 0.3rem 0.65rem;
@@ -509,6 +515,10 @@ table.data-table td.align-right {
   display: flex;
   gap: 1rem;
   flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+.field-row:last-child {
+  margin-bottom: 0;
 }
 .field-row > div {
   display: flex;
