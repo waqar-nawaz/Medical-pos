@@ -1,1 +1,4 @@
-export const environment = { production: true, apiBaseUrl: 'http://localhost:3001/api' };
+export const environment = {
+  production: true,
+  apiBaseUrl: 'https://medical-pos-api.onrender.com/api'
+};
