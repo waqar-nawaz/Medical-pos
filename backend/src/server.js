@@ -2,8 +2,11 @@
 const http = require('http');
 const { createApp } = require('./app');
 const { config } = require('./config/env');
+const { provisionDatabase } = require('./config/provision');
 const { startBackupCron } = require('./cron/backup.cron');
 const { logger } = require('./utils/logger');
+
+provisionDatabase();
 
 const app = createApp();
 const server = http.createServer(app);
