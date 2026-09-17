@@ -97,7 +97,19 @@
     margin-top: 0.25rem;
   }
 
-  button {
+  .login-error {
+    margin-top: 1rem;
+    padding: 0.6rem 0.75rem;
+    border-radius: var(--radius-sm);
+    background: var(--danger-bg);
+    border: 1px solid var(--danger);
+    color: var(--danger);
+    font-size: 0.82rem;
+    text-align: center;
+    line-height: 1.3;
+  }
+
+  button[type='submit'] {
     width: 100%;
     margin-top: 1.5rem;
     padding: 0.72rem;

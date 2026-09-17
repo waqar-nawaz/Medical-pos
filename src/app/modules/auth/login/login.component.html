@@ -18,6 +18,8 @@
     </div>
     <div class="field-error" *ngIf="submitted && form.controls.password.invalid">Password is required</div>
 
+    <div class="login-error" *ngIf="errorMsg">{{ errorMsg }}</div>
+
     <button type="submit" [disabled]="loading">{{ loading ? 'Signing in…' : 'Sign in' }}</button>
 
     <div class="row">

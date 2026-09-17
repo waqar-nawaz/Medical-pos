@@ -22,6 +22,8 @@
     </div>
     <div class="field-error" *ngIf="submitted && form.controls.password.invalid">Minimum 8 characters</div>
 
+    <div class="login-error" *ngIf="errorMsg">{{ errorMsg }}</div>
+
     <button type="submit" [disabled]="loading">{{ loading ? 'Creating…' : 'Create' }}</button>
 
     <div class="row">
