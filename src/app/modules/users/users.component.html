@@ -108,7 +108,7 @@
             <option value="cashier">Cashier — limited access</option>
             <option value="admin">Admin — full access</option>
           </select>
-          <div class="field-note" *ngIf="!editing && form.value.role === 'cashier'">New cashiers start with no page access — use the ⚙️ button to grant permissions after saving.</div>
+          <div class="field-note" *ngIf="!editing && form.value.role === 'cashier'">New cashiers start with Dashboard + POS access — use the ⚙️ button to change permissions after saving.</div>
         </div>
       </div>
     </form>

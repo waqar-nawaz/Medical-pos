@@ -90,6 +90,12 @@ export class UsersComponent implements OnInit {
     return role === 'admin' ? 'chip-admin' : 'chip-cashier';
   }
 
+  defaultPermissions(role: string): string[] {
+    return role === 'admin'
+      ? this.permissionItems.map(p => p.key)
+      : ['dashboard', 'pos'];
+  }
+
   permCount(user: any): string {
     if (user.role === 'admin') return 'All access';
     const perms = user.permissions || [];
@@ -130,7 +136,9 @@ export class UsersComponent implements OnInit {
       name: this.form.value.name,
       email: this.form.value.email,
       role: this.form.value.role,
-      permissions: this.editing ? (this.editing.permissions || []) : [],
+      permissions: this.editing
+        ? (this.editing.permissions || [])
+        : this.defaultPermissions(this.form.value.role),
     };
     const req = this.editing
       ? this.api.put<any>(`/users/${this.editing.id}`, body)

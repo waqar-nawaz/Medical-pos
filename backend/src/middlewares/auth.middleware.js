@@ -36,8 +36,18 @@ function requirePermission(perm) {
     if (!u) return res.status(401).json({ ok: false, error: { message: 'Unauthorized' } });
     if (u.role === 'admin') return next();
     const perms = Array.isArray(u.permissions) ? u.permissions : [];
-    const allowed = perms.includes(perm) || (perm === 'sales' && perms.includes('pos'));
-    if (allowed) return next();
+    const method = req.method || 'GET';
+
+    // A POS cashier needs read-only access to the supporting data required to
+    // bill a customer, even without the matching standalone permission.
+    const posFallback =
+      perms.includes('pos') &&
+      (perm === 'sales' ||
+        (perm === 'products' && method === 'GET') ||
+        (perm === 'customers' && (method === 'GET' || method === 'POST')) ||
+        (perm === 'settings' && method === 'GET'));
+
+    if (perms.includes(perm) || posFallback) return next();
     return res.status(403).json({ ok: false, error: { message: 'Forbidden' } });
   };
 }

@@ -1,22 +1,10 @@
 const bcrypt = require('bcryptjs');
 const { z } = require('zod');
 const { AppError } = require('../utils/errors');
+const { PERMISSIONS, defaultPermissions } = require('../utils/permissions');
 const User = require('../models/user.model');
 
 const VALID_ROLES = ['admin', 'cashier'];
-
-const PERMISSIONS = [
-  'dashboard',
-  'pos',
-  'products',
-  'sales',
-  'suppliers',
-  'customers',
-  'purchase-orders',
-  'reports',
-  'settings',
-  'users',
-];
 
 const createSchema = z.object({
   email: z.string().min(1),
@@ -52,7 +40,7 @@ function create(req, res) {
     name: body.name,
     role: body.role,
     passwordHash,
-    permissions: body.permissions,
+    permissions: body.permissions.length ? body.permissions : defaultPermissions(body.role),
   });
   res.status(201).json({ ok: true, data: user });
 }

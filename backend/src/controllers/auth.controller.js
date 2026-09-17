@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const { z } = require('zod');
 const { config } = require('../config/env');
 const { AppError } = require('../utils/errors');
+const { defaultPermissions } = require('../utils/permissions');
 const User = require('../models/user.model');
 
 const loginSchema = z.object({
@@ -65,7 +66,13 @@ async function register(req, res) {
   if (User.findByEmail(email)) throw new AppError('Email already exists', 409, 'AUTH_EXISTS');
 
   const passwordHash = bcrypt.hashSync(body.password, 10);
-  const user = User.createUser({ email, name: body.name, role: 'cashier', passwordHash });
+  const user = User.createUser({
+    email,
+    name: body.name,
+    role: 'cashier',
+    passwordHash,
+    permissions: defaultPermissions('cashier'),
+  });
 
   res.status(201).json({ ok: true, user });
 }

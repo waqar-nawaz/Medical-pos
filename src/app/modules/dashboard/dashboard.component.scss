@@ -8,8 +8,11 @@
 
 .stat-card {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  padding: 20px !important;
+  text-align: center;
+  gap: 10px;
+  padding: 22px 18px !important;
   border-radius: 12px !important;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
@@ -29,7 +32,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-right: 16px;
+  margin-bottom: 2px;
   flex-shrink: 0;
   font-size: 26px;
   line-height: 1;
@@ -37,11 +40,11 @@
 }
 
 .stat-content {
-  flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  align-items: center;
+  text-align: center;
 }
 
 .stat-value {
@@ -275,7 +278,7 @@
   .stats-grid { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
 
   .stat-card { padding: 16px !important; }
-  .stat-icon { width: 44px; height: 44px; margin-right: 12px; font-size: 22px; }
+  .stat-icon { width: 44px; height: 44px; margin-bottom: 2px; font-size: 22px; }
   .stat-value { font-size: 24px; }
   .quick-actions { grid-template-columns: 1fr 1fr; padding: 12px; gap: 8px; }
   .action-btn { padding: 10px 8px; font-size: 0.78rem; flex-direction: column; white-space: normal; }
