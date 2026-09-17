@@ -28,7 +28,7 @@ async function login(req, res) {
       });
     }
 
-    const ok = bcrypt.compare(body.password, u.passwordHash);
+    const ok = await bcrypt.compare(body.password, u.passwordHash);
 
     if (!ok) {
       return res.status(401).json({

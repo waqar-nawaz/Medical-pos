@@ -12,7 +12,8 @@
 }
 .actions { margin-top: 10px; display: flex; gap: 10px; flex-wrap: wrap; }
 .searchRow { display: flex; gap: 10px; align-items: flex-start; flex-wrap: wrap; }
-.searchRow input.full { flex: 1; min-width: 200px; }
+.searchRow .search-wrap { flex: 1; min-width: 200px; }
+.searchRow input.full { width: 100%; }
 .searchRow select.cat { width: 190px; }
 .full { width: 100%; }
 .tableWrap { margin-top: 10px; overflow: auto; }
@@ -118,5 +119,4 @@
 .modal-form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
 }

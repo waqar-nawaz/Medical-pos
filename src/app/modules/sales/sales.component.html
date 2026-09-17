@@ -80,6 +80,7 @@
 <!-- Invoice Details Modal -->
 <div class="modal-backdrop" *ngIf="invoiceModalOpen">
   <div class="modal-card" role="dialog" aria-modal="true">
+    <button class="modal-close" type="button" (click)="closeInvoice()" aria-label="Close">&times;</button>
     <h2>Invoice Details</h2>
     <div class="modal-sub">Invoice #{{ selected?.invoiceNo }} · {{ selected?.createdAt | date:'dd MMMM yyyy, h:mm a' }}</div>
 
@@ -136,6 +137,7 @@
 <!-- WhatsApp Modal -->
 <div class="modal-backdrop" *ngIf="whatsappModalOpen" (click.self)="closeWhatsapp()">
   <div class="modal-card" style="max-width: 420px;" role="dialog" aria-modal="true">
+    <button class="modal-close" type="button" (click)="closeWhatsapp()" aria-label="Close">&times;</button>
     <h2>Send WhatsApp</h2>
     <div class="field">
       <label>Phone Number</label>
@@ -151,6 +153,7 @@
 <!-- Edit Bill Modal -->
 <div class="modal-backdrop" *ngIf="editModalOpen">
   <div class="modal-card" style="max-width: 820px;" role="dialog" aria-modal="true">
+    <button class="modal-close" type="button" (click)="closeEdit()" aria-label="Close">&times;</button>
     <h2>Edit Bill — {{ selected?.invoiceNo }}</h2>
     <p class="edit-warning">⚠ Changes will recalculate totals and update inventory automatically.</p>
 
@@ -198,6 +201,7 @@
 <!-- Customer Ledger Modal -->
 <div class="modal-backdrop" *ngIf="ledgerModalOpen" (click.self)="closeLedger()">
   <div class="modal-card" role="dialog" aria-modal="true">
+    <button class="modal-close" type="button" (click)="closeLedger()" aria-label="Close">&times;</button>
     <h2>Customer Ledger — {{ ledgerData?.customer?.name }}</h2>
     <div class="balance-summary" *ngIf="ledgerData?.customer">
       <span>Current Balance:</span>

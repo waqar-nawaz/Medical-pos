@@ -23,6 +23,8 @@ export class UsersComponent implements OnInit {
   editingPermissionUser: any = null;
   editingResetUser: any = null;
   newPassword = '';
+  showUserPassword = false;
+  showResetPassword = false;
 
   userModalOpen = false;
   permissionModalOpen = false;
@@ -128,7 +130,7 @@ export class UsersComponent implements OnInit {
       name: this.form.value.name,
       email: this.form.value.email,
       role: this.form.value.role,
-      permissions: this.editing ? (this.editing.permissions || []) : (this.form.value.role === 'admin' ? [] : ['pos', 'products']),
+      permissions: this.editing ? (this.editing.permissions || []) : [],
     };
     const req = this.editing
       ? this.api.put<any>(`/users/${this.editing.id}`, body)

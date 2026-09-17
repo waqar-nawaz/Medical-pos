@@ -4,7 +4,10 @@
 
 <div class="card panel">
   <div class="searchRow">
-    <input class="full" [(ngModel)]="q" (ngModelChange)="applyFilter()" placeholder="Search users by name or email..." />
+    <div class="search-wrap">
+      <input class="full" [(ngModel)]="q" (ngModelChange)="applyFilter()" placeholder="Search users by name or email..." />
+      <button type="button" class="input-clear" *ngIf="q" (click)="q=''; applyFilter()" aria-label="Clear search">&times;</button>
+    </div>
   </div>
 </div>
 
@@ -66,6 +69,7 @@
 <!-- Add/Edit User Modal -->
 <div class="modal-backdrop" *ngIf="userModalOpen" (click.self)="closeModal()">
   <div class="modal-card" role="dialog" aria-modal="true">
+    <button class="modal-close" type="button" (click)="closeModal()" aria-label="Close">&times;</button>
     <h2>{{ editing ? 'Edit User' : 'Add New User' }}</h2>
     <div class="modal-sub">{{ editing ? 'Update the user details below' : 'Fill in the details to create a new user' }}</div>
 
@@ -87,7 +91,13 @@
       <div class="field-row" *ngIf="!editing">
         <div class="field">
           <label>Password *</label>
-          <input type="password" formControlName="password" placeholder="At least 6 characters" />
+          <div class="password-field">
+            <input [type]="showUserPassword ? 'text' : 'password'" formControlName="password" placeholder="At least 6 characters" />
+            <button type="button" class="eye-toggle" (click)="showUserPassword = !showUserPassword" [attr.aria-label]="showUserPassword ? 'Hide password' : 'Show password'">
+              <svg *ngIf="!showUserPassword" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              <svg *ngIf="showUserPassword" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -98,13 +108,14 @@
             <option value="cashier">Cashier — limited access</option>
             <option value="admin">Admin — full access</option>
           </select>
+          <div class="field-note" *ngIf="!editing && form.value.role === 'cashier'">New cashiers start with no page access — use the ⚙️ button to grant permissions after saving.</div>
         </div>
       </div>
     </form>
 
     <div class="modal-actions">
       <button class="btn btn-outline" (click)="closeModal()">Cancel</button>
-      <button class="btn" (click)="save()" [disabled]="form.invalid">{{ editing ? 'Update User' : 'Create User' }}</button>
+      <button class="btn" (click)="save()">{{ editing ? 'Update User' : 'Create User' }}</button>
     </div>
   </div>
 </div>
@@ -112,6 +123,7 @@
 <!-- Permissions Modal -->
 <div class="modal-backdrop" *ngIf="permissionModalOpen" (click.self)="closePermissionModal()">
   <div class="modal-card" role="dialog" aria-modal="true">
+    <button class="modal-close" type="button" (click)="closePermissionModal()" aria-label="Close">&times;</button>
     <h2>Permissions</h2>
     <p class="perm-hint">
       Grant access for <strong>{{ editingPermissionUser?.name }}</strong> ({{ roleLabel(editingPermissionUser?.role) }}).
@@ -138,6 +150,7 @@
 <!-- Reset Password Modal -->
 <div class="modal-backdrop" *ngIf="resetModalOpen" (click.self)="closeResetModal()">
   <div class="modal-card" role="dialog" aria-modal="true">
+    <button class="modal-close" type="button" (click)="closeResetModal()" aria-label="Close">&times;</button>
     <h2>Reset Password</h2>
     <p class="perm-hint">
       Set a new password for <strong>{{ editingResetUser?.name }}</strong> ({{ editingResetUser?.email }}).
@@ -145,12 +158,18 @@
     <div class="field-row">
       <div class="field">
         <label>New Password *</label>
-        <input type="password" [(ngModel)]="newPassword" placeholder="At least 6 characters" />
+        <div class="password-field">
+          <input [type]="showResetPassword ? 'text' : 'password'" [(ngModel)]="newPassword" placeholder="At least 6 characters" />
+          <button type="button" class="eye-toggle" (click)="showResetPassword = !showResetPassword" [attr.aria-label]="showResetPassword ? 'Hide password' : 'Show password'">
+            <svg *ngIf="!showResetPassword" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            <svg *ngIf="showResetPassword" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+          </button>
+        </div>
       </div>
     </div>
     <div class="modal-actions">
       <button class="btn btn-outline" (click)="closeResetModal()">Cancel</button>
-      <button class="btn" (click)="savePassword()" [disabled]="newPassword.length < 6">Save Password</button>
+      <button class="btn" (click)="savePassword()">Save Password</button>
     </div>
   </div>
 </div>

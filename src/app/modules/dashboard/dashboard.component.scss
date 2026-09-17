@@ -32,12 +32,16 @@
   margin-right: 16px;
   flex-shrink: 0;
   font-size: 26px;
+  line-height: 1;
   color: #fff;
 }
 
 .stat-content {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .stat-value {
@@ -46,6 +50,7 @@
   line-height: 1.2;
   margin-bottom: 4px;
   color: var(--text);
+  overflow-wrap: anywhere;
 }
 
 .stat-label {
@@ -245,19 +250,20 @@
 /* Quick actions */
 .quick-actions {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 12px;
-  padding: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+  padding: 16px;
 }
 
 .action-btn {
-  flex-direction: column;
+  flex-direction: row;
   gap: 8px;
-  padding: 18px 14px;
+  padding: 12px 14px;
   height: auto;
   font-weight: 500;
   font-size: 0.83rem;
   justify-content: center;
+  white-space: nowrap;
 }
 
 /* Responsive */
@@ -271,5 +277,6 @@
   .stat-card { padding: 16px !important; }
   .stat-icon { width: 44px; height: 44px; margin-right: 12px; font-size: 22px; }
   .stat-value { font-size: 24px; }
-  .quick-actions { grid-template-columns: 1fr; }
+  .quick-actions { grid-template-columns: 1fr 1fr; padding: 12px; gap: 8px; }
+  .action-btn { padding: 10px 8px; font-size: 0.78rem; flex-direction: column; white-space: normal; }
 }

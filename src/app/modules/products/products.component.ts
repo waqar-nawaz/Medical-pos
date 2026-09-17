@@ -21,6 +21,7 @@ export class ProductsComponent implements OnInit {
   newQty: number = 0;
   productModalOpen = false;
   qtyModalOpen = false;
+  submitted = false;
   form: any;
 
   constructor(private fb: FormBuilder, private api: ApiService, private toast: ToastService, private confirm: ConfirmService) {
@@ -94,6 +95,7 @@ export class ProductsComponent implements OnInit {
 
   openModal(row?: any) {
     this.editing = row ?? null;
+    this.submitted = false;
     if (row) {
       this.form.patchValue({ ...row, isActive: row.isActive === 1 || row.isActive === true, supplierId: row.supplierId ?? null, expiryDate: row.expiryDate || '', shelf: row.shelf || '', productDiscount: row.productDiscount || 0, unitsPerStrip: row.unitsPerStrip || 1, stripsPerBox: row.stripsPerBox || 1, packagingUnit: row.packagingUnit || 'unit' });
     } else {
@@ -119,6 +121,7 @@ export class ProductsComponent implements OnInit {
   }
 
   save() {
+    this.submitted = true;
     if (this.form.invalid) {
       this.toast.warning('Please fill all required fields correctly');
       return;

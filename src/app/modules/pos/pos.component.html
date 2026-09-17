@@ -12,8 +12,11 @@
         <div class="card-title">🔍 Search Medicine</div>
       </div>
       <div class="field">
-        <input #barcodeInput [formControl]="searchCtrl" (keydown.enter)="onEnter()"
-          placeholder="Search medicine by name or barcode..." />
+        <div class="search-wrap">
+          <input #barcodeInput [formControl]="searchCtrl" (keydown.enter)="onEnter()"
+            placeholder="Search medicine by name or barcode..." />
+          <button type="button" class="input-clear" *ngIf="searchCtrl.value" (click)="searchCtrl.setValue('')" aria-label="Clear search">&times;</button>
+        </div>
         <div class="suggest-dropdown" *ngIf="searching || suggestions.length">
           <div class="suggest-item searching" *ngIf="searching && !suggestions.length">
             <span class="searching-text">Searching...</span>
@@ -87,7 +90,10 @@
 
         <!-- STATE 1: No customer selected yet -->
         <div class="customer-search-wrap" *ngIf="!selectedCustomer && !isNewCustomer">
-          <input [formControl]="customerSearchCtrl" placeholder="Search by name or phone..." />
+          <div class="search-wrap">
+            <input [formControl]="customerSearchCtrl" placeholder="Search by name or phone..." />
+            <button type="button" class="input-clear" *ngIf="customerSearchCtrl.value" (click)="customerSearchCtrl.setValue('')" aria-label="Clear search">&times;</button>
+          </div>
           <div class="suggest-dropdown"
             *ngIf="searchingCustomers || customerSuggestions.length || (customerSearchCtrl.value && !searchingCustomers)">
             <div class="suggest-item searching" *ngIf="searchingCustomers">

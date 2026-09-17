@@ -629,6 +629,110 @@ html.theme-dark .modal-card,
   margin-top: 1.25rem;
 }
 
+/* ── Modal close button ───────────────────────────────────── */
+
+.modal-card { position: relative; }
+
+.modal-close {
+  position: absolute;
+  top: 0.65rem;
+  right: 0.65rem;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 1.5rem;
+  line-height: 1;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.modal-close:hover {
+  background: var(--surface-hover);
+  color: var(--danger);
+}
+
+/* ── Password field with visibility toggle ────────────────── */
+
+.password-field {
+  position: relative;
+  display: block;
+}
+
+.password-field input {
+  width: 100%;
+  padding-right: 2.6rem;
+  box-sizing: border-box;
+}
+
+.eye-toggle {
+  position: absolute;
+  top: 50%;
+  right: 0.5rem;
+  transform: translateY(-50%);
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 0.25rem;
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+}
+
+.eye-toggle:hover {
+  color: var(--primary);
+  background: var(--surface-hover);
+}
+
+.eye-toggle svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* ── Input with clear (x) button ──────────────────────────── */
+
+.search-wrap {
+  position: relative;
+  display: block;
+}
+
+.search-wrap input {
+  width: 100%;
+  padding-right: 2.2rem;
+  box-sizing: border-box;
+}
+
+.input-clear {
+  position: absolute;
+  top: 50%;
+  right: 0.5rem;
+  transform: translateY(-50%);
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--text-muted);
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.input-clear:hover {
+  background: var(--surface-hover);
+  color: var(--danger);
+}
+
 /* ── Toast (custom, replaces snackbar) ────────────────────── */
 
 .toast-root {

@@ -1,5 +1,6 @@
 <div class="modal-backdrop" *ngIf="open">
   <div class="modal-card confirm-modal" style="max-width: 420px;">
+    <button class="modal-close" type="button" (click)="cancel()" aria-label="Close">&times;</button>
     <h2 [class.text-danger]="options?.isDanger">
       <span *ngIf="options?.isDanger">⚠ </span>{{ options?.title }}
     </h2>

@@ -13,6 +13,7 @@
   gap: 10px;
   align-items: flex-start;
 
+  .search-wrap { flex: 1; }
   .full { width: 100%; }
 
   @media (max-width: 600px) {

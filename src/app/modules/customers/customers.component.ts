@@ -12,6 +12,7 @@ export class CustomersComponent implements OnInit {
   rows: any[] = [];
   editing: any = null;
   modalOpen = false;
+  submitted = false;
   form: any;
 
   constructor(
@@ -46,6 +47,7 @@ export class CustomersComponent implements OnInit {
 
   openModal(customer?: any) {
     this.editing = customer ?? null;
+    this.submitted = false;
 
     if (customer) {
       this.form.patchValue({
@@ -74,6 +76,7 @@ export class CustomersComponent implements OnInit {
   }
 
   save() {
+    this.submitted = true;
     if (this.form.invalid) {
       this.toast.warning('Please fill in all required fields');
       return;

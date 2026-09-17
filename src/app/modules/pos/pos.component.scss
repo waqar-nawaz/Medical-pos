@@ -10,6 +10,7 @@
   --pos-red:   #dc2626;
   --pos-amber: #d97706;
   --pos-blue:  #1d4ed8;
+  --pos-grand: #0f2644;
 }
 
 .pos-layout {
@@ -333,8 +334,8 @@
   align-items: center;
   gap: 10px;
   padding: 10px 14px;
-  background: linear-gradient(135deg, #eff6ff, #dbeafe);
-  border: 1.5px solid #93c5fd;
+  background: var(--info-bg);
+  border: 1.5px solid var(--primary-light);
   border-radius: 8px;
 }
 
@@ -359,10 +360,11 @@
 .chip-clear { font-size: 13px; color: var(--text-muted); }
 
 .new-customer-form {
-  border: 1.5px dashed #a5b4fc;
+  border: 1px solid var(--border-strong);
   border-radius: 8px;
   padding: 14px;
-  background: var(--surface-2);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
 }
 
 .new-customer-header {
@@ -442,8 +444,8 @@
 .grand-total {
   padding-top: 12px;
   padding-bottom: 12px;
-  border-top: 2px solid var(--pos-navy) !important;
-  border-bottom: 2px solid var(--pos-navy) !important;
+  border-top: 2px solid var(--pos-grand) !important;
+  border-bottom: 2px solid var(--pos-grand) !important;
 
   span:first-child {
     font-size: 14px !important;
@@ -454,7 +456,7 @@
   .amount {
     font-size: 20px !important;
     font-weight: 800 !important;
-    color: var(--pos-navy) !important;
+    color: var(--pos-grand) !important;
   }
 }
 
@@ -566,12 +568,13 @@
 }
 
 /* ── Dark mode ────────────────────────────────────────────────── */
-.theme-dark {
+:host-context(.theme-dark) {
   --pos-blue:  #7da2fa;
   --pos-teal:  #2dd4bf;
   --pos-green: #34d399;
   --pos-red:   #f87171;
   --pos-amber: #fbbf24;
+  --pos-grand: #5fb4e5;
 
   .category-badge {
     background: rgba(125, 162, 250, 0.15);
@@ -612,10 +615,10 @@
   }
 
   .grand-total {
-    border-top-color: var(--pos-teal) !important;
-    border-bottom-color: var(--pos-teal) !important;
+    border-top-color: var(--pos-grand) !important;
+    border-bottom-color: var(--pos-grand) !important;
     span:first-child { color: var(--text) !important; }
-    .amount { color: var(--pos-teal) !important; }
+    .amount { color: var(--pos-grand) !important; }
   }
 
   .balance-due {

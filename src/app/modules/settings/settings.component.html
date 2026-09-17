@@ -10,7 +10,8 @@
     <div class="grid2">
       <div class="field">
         <label>Store name *</label>
-        <input formControlName="storeName" required />
+        <input formControlName="storeName" [class.invalid]="submitted && form.controls.storeName.invalid" />
+        <div class="field-error" *ngIf="submitted && form.controls.storeName.invalid">Store name is required</div>
       </div>
 
       <div class="field">
@@ -38,7 +39,7 @@
     </div>
 
     <div class="actions" style="margin-top:18px;">
-      <button class="btn" type="button" (click)="save()" [disabled]="form.invalid || loading">
+      <button class="btn" type="button" (click)="save()" [disabled]="loading">
         💾 Save
       </button>
     </div>

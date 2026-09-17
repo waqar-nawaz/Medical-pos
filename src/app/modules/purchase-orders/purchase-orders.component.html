@@ -44,6 +44,7 @@
 <!-- Create Purchase Order Modal -->
 <div class="modal-backdrop" *ngIf="modalOpen" (click.self)="closeModal()">
   <div class="modal-card" role="dialog" aria-modal="true">
+    <button class="modal-close" type="button" (click)="closeModal()" aria-label="Close">&times;</button>
     <h2>➕ Create purchase order</h2>
 
     <div class="field">

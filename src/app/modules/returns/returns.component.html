@@ -6,7 +6,10 @@
       <div class="card-title">↩️ Create return</div>
     </div>
     <div class="searchRow">
-      <input type="text" class="grow" [(ngModel)]="invoiceSearch" (keydown.enter)="searchSale()" placeholder="Invoice # / Customer name — e.g. INV-20260216-0001" />
+      <div class="search-wrap grow">
+        <input type="text" [(ngModel)]="invoiceSearch" (keydown.enter)="searchSale()" placeholder="Invoice # / Customer name — e.g. INV-20260216-0001" />
+        <button type="button" class="input-clear" *ngIf="invoiceSearch" (click)="invoiceSearch=''; saleResults=[]" aria-label="Clear search">&times;</button>
+      </div>
       <button class="btn btn-outline" (click)="searchSale()">🔍 Find</button>
     </div>
 

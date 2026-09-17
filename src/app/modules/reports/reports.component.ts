@@ -9,6 +9,7 @@ import { ApiService } from '../../core/services/api.service';
 export class ReportsComponent implements OnInit {
   from = '';
   to = '';
+  activePeriod: 'today' | 'week' | 'month' | 'custom' = 'month';
   summary: any = null;
   gstRows: any[] = [];
 
@@ -152,16 +153,38 @@ export class ReportsComponent implements OnInit {
   };
 
   constructor(private api: ApiService) {
-    const today = new Date();
-    const lastMonth = new Date();
-    lastMonth.setDate(today.getDate() - 30);
-
-    this.to = today.toISOString().split('T')[0];
-    this.from = lastMonth.toISOString().split('T')[0];
+    this.setPeriod('month', false);
   }
 
   ngOnInit() {
     this.load();
+  }
+
+  setPeriod(period: 'today' | 'week' | 'month' | 'custom', reload = true) {
+    this.activePeriod = period;
+    const fmt = (d: Date) => {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    };
+    const today = new Date();
+
+    if (period === 'today') {
+      this.from = fmt(today);
+      this.to = fmt(today);
+    } else if (period === 'week') {
+      const start = new Date(today);
+      start.setDate(today.getDate() - 6);
+      this.from = fmt(start);
+      this.to = fmt(today);
+    } else if (period === 'month') {
+      const start = new Date(today.getFullYear(), today.getMonth(), 1);
+      this.from = fmt(start);
+      this.to = fmt(today);
+    }
+
+    if (reload && period !== 'custom') this.load();
   }
 
   load() {

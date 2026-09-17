@@ -9,9 +9,10 @@ import { ToastService } from '../../../core/services/toast.service';
 })
 export class SecurityComponent {
   loading = false;
+  submitted = false;
+  showOld = false;
+  showNew = false;
   form: any;
-
-  
 
   constructor(private fb: FormBuilder, private api: ApiService, private toast: ToastService) {
     this.form = this.fb.group({
@@ -21,11 +22,13 @@ export class SecurityComponent {
   }
 
   save() {
+    this.submitted = true;
     if (this.form.invalid || this.loading) return;
     this.loading = true;
     this.api.post<any>('/auth/change-password', this.form.value).subscribe({
       next: () => {
         this.toast.success('Password updated');
+        this.submitted = false;
         this.form.reset({ oldPassword: '', newPassword: '' });
       },
       error: () => (this.loading = false),

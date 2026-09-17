@@ -9,6 +9,7 @@ import { ToastService } from '../../core/services/toast.service';
 })
 export class SettingsComponent implements OnInit {
   loading = false;
+  submitted = false;
   form: any;
 
   
@@ -37,10 +38,17 @@ export class SettingsComponent implements OnInit {
   }
 
   save() {
-    if (this.form.invalid || this.loading) return;
+    this.submitted = true;
+    if (this.form.invalid || this.loading) {
+      if (this.form.invalid) this.toast.warning('Please fill all required fields correctly');
+      return;
+    }
     this.loading = true;
     this.api.put<any>('/settings', this.form.value).subscribe({
-      next: () => this.toast.success('Settings saved'),
+      next: () => {
+        this.submitted = false;
+        this.toast.success('Settings saved');
+      },
       error: () => (this.loading = false),
       complete: () => (this.loading = false),
     });

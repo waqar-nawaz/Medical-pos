@@ -1,14 +1,22 @@
 <app-page-header title="Reports & Analytics" subtitle="Business insights and performance metrics">
   <div class="header-controls">
-    <div class="field date-field">
-      <label>From</label>
-      <input type="date" [(ngModel)]="from" (change)="load()" />
+    <div class="period-tabs">
+      <button type="button" class="period-tab" [class.active]="activePeriod === 'today'" (click)="setPeriod('today')">Today</button>
+      <button type="button" class="period-tab" [class.active]="activePeriod === 'week'" (click)="setPeriod('week')">This Week</button>
+      <button type="button" class="period-tab" [class.active]="activePeriod === 'month'" (click)="setPeriod('month')">This Month</button>
+      <button type="button" class="period-tab" [class.active]="activePeriod === 'custom'" (click)="setPeriod('custom')">Custom</button>
     </div>
-    <div class="field date-field">
-      <label>To</label>
-      <input type="date" [(ngModel)]="to" (change)="load()" />
-    </div>
-    <button class="btn" (click)="load()">🔄 Refresh</button>
+    <ng-container *ngIf="activePeriod === 'custom'">
+      <div class="field date-field">
+        <label>From</label>
+        <input type="date" [(ngModel)]="from" (change)="load()" />
+      </div>
+      <div class="field date-field">
+        <label>To</label>
+        <input type="date" [(ngModel)]="to" (change)="load()" />
+      </div>
+    </ng-container>
+    <button class="btn btn-outline" (click)="load()">🔄 Refresh</button>
   </div>
 </app-page-header>
 

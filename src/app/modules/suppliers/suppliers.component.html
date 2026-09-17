@@ -44,6 +44,7 @@
 <!-- Add/Edit Supplier Modal -->
 <div class="modal-backdrop" *ngIf="modalOpen" (click.self)="closeModal()">
   <div class="modal-card" role="dialog" aria-modal="true">
+    <button class="modal-close" type="button" (click)="closeModal()" aria-label="Close">&times;</button>
     <h2>{{ editing ? 'Edit Supplier' : 'Add New Supplier' }}</h2>
     <div class="modal-sub">{{ editing ? 'Update the supplier details below' : 'Fill in the details to add a new supplier' }}</div>
 
@@ -51,7 +52,8 @@
       <div class="field-row">
         <div class="field">
           <label>Supplier Name *</label>
-          <input type="text" formControlName="name" placeholder="Enter supplier name" />
+          <input type="text" formControlName="name" placeholder="Enter supplier name" [class.invalid]="submitted && form.controls.name.invalid" />
+          <div class="field-error" *ngIf="submitted && form.controls.name.invalid">Supplier name is required</div>
         </div>
       </div>
 
@@ -90,7 +92,7 @@
 
     <div class="modal-actions">
       <button class="btn btn-outline" (click)="closeModal()">Cancel</button>
-      <button class="btn" (click)="save()" [disabled]="form.invalid">{{ editing ? 'Update Supplier' : 'Add Supplier' }}</button>
+      <button class="btn" (click)="save()">{{ editing ? 'Update Supplier' : 'Add Supplier' }}</button>
     </div>
   </div>
 </div>

@@ -10,6 +10,7 @@ import { ApiService } from '../../../core/services/api.service';
 export class RegisterComponent {
   loading = false;
   submitted = false;
+  showPassword = false;
   form: any;
 
   constructor(private fb: FormBuilder, private api: ApiService, private router: Router) {
