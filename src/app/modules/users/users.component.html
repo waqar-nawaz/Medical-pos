@@ -108,9 +108,31 @@
             <option value="cashier">Cashier — limited access</option>
             <option value="admin">Admin — full access</option>
           </select>
-          <div class="field-note" *ngIf="!editing && form.value.role === 'cashier'">New cashiers start with Dashboard + POS access — use the ⚙️ button to change permissions after saving.</div>
+          <div class="field-note" *ngIf="!editing && form.value.role === 'cashier'">New cashiers start with Dashboard + POS access — use the permissions list below to grant more.</div>
         </div>
       </div>
+
+      <ng-container *ngIf="editing && form.value.role === 'admin'">
+        <div class="field-note">Admin users automatically have full access that cannot be reduced.</div>
+      </ng-container>
+
+      <ng-container *ngIf="form.value.role === 'cashier'">
+        <div class="field">
+          <label>Permissions</label>
+          <div class="perm-actions">
+            <button type="button" class="btn btn-outline btn-sm" (click)="grantAllEdit()">Grant All — full access</button>
+            <button type="button" class="btn btn-outline btn-sm" (click)="clearAllEdit()">Clear All</button>
+          </div>
+          <div class="perm-grid">
+            <label class="perm-item" *ngFor="let p of permissionItems">
+              <input type="checkbox" [checked]="hasEditPerm(p.key)" (change)="toggleEditPerm(p.key)" />
+              <span class="perm-icon">{{ p.icon }}</span>
+              {{ p.label }}
+            </label>
+          </div>
+          <div class="field-note" *ngIf="editing">The user must sign in again to see permissions changes.</div>
+        </div>
+      </ng-container>
     </form>
 
     <div class="modal-actions">

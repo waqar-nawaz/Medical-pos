@@ -1,11 +1,12 @@
 const router = require('express').Router();
 const Ctrl = require('../controllers/users.controller');
-const { auth, requireRole } = require('../middlewares/auth.middleware');
+const { auth, requirePermission } = require('../middlewares/auth.middleware');
 
-router.get('/', auth(true), requireRole('admin'), Ctrl.list);
-router.post('/', auth(true), requireRole('admin'), Ctrl.create);
-router.put('/:id', auth(true), requireRole('admin'), Ctrl.update);
-router.post('/:id/reset-password', auth(true), requireRole('admin'), Ctrl.resetPassword);
-router.delete('/:id', auth(true), requireRole('admin'), Ctrl.remove);
+// User management is gated by the 'users' permission (admins always pass).
+router.get('/', auth(true), requirePermission('users'), Ctrl.list);
+router.post('/', auth(true), requirePermission('users'), Ctrl.create);
+router.put('/:id', auth(true), requirePermission('users'), Ctrl.update);
+router.post('/:id/reset-password', auth(true), requirePermission('users'), Ctrl.resetPassword);
+router.delete('/:id', auth(true), requirePermission('users'), Ctrl.remove);
 
 module.exports = router;

@@ -44,6 +44,7 @@ export class UsersComponent implements OnInit {
   ];
 
   form: any;
+  editPerms: string[] = [];
 
   constructor(
     private fb: FormBuilder,
@@ -116,8 +117,10 @@ export class UsersComponent implements OnInit {
     this.editing = row ?? null;
     if (row) {
       this.form.patchValue({ name: row.name, email: row.email, password: '', role: row.role });
+      this.editPerms = row.role === 'admin' ? this.allPermKeys() : [...(row.permissions || [])];
     } else {
       this.form.reset({ name: '', email: '', password: '', role: 'cashier' });
+      this.editPerms = this.defaultPermissions('cashier');
     }
     this.userModalOpen = true;
   }
@@ -127,25 +130,51 @@ export class UsersComponent implements OnInit {
     this.editing = null;
   }
 
+  allPermKeys(): string[] {
+    return this.permissionItems.map(p => p.key);
+  }
+
+  hasEditPerm(perm: string): boolean {
+    return this.editPerms.includes(perm);
+  }
+
+  toggleEditPerm(perm: string) {
+    const i = this.editPerms.indexOf(perm);
+    if (i >= 0) this.editPerms = this.editPerms.filter(x => x !== perm);
+    else this.editPerms = [...this.editPerms, perm];
+  }
+
+  grantAllEdit() {
+    this.editPerms = this.allPermKeys();
+  }
+
+  clearAllEdit() {
+    this.editPerms = [];
+  }
+
   save() {
     if (this.form.invalid) {
       this.toast.warning('Please fill all required fields correctly');
       return;
     }
+    const role = this.form.value.role;
+    const perms = role === 'admin' ? this.allPermKeys() : (this.editing ? this.editPerms : this.defaultPermissions(role));
     const body: any = {
       name: this.form.value.name,
       email: this.form.value.email,
-      role: this.form.value.role,
-      permissions: this.editing
-        ? (this.editing.permissions || [])
-        : this.defaultPermissions(this.form.value.role),
+      role,
+      permissions: perms,
     };
     const req = this.editing
       ? this.api.put<any>(`/users/${this.editing.id}`, body)
       : this.api.post<any>('/users', { ...body, password: this.form.value.password });
     req.subscribe({
       next: () => {
-        this.toast.success(this.editing ? 'User updated successfully' : 'User created successfully');
+        this.toast.success(
+          this.editing
+            ? `User updated — ${this.form.value.name} must sign in again to see the new access`
+            : 'User created successfully'
+        );
         this.closeModal();
         this.load();
       },
