@@ -1,4 +1,5 @@
 <app-page-header title="Supplier Management" subtitle="Manage medicine suppliers">
+  <button class="btn btn-outline" *ngIf="rows.length" (click)="exportCsv()">Export CSV</button>
   <button class="btn" (click)="openModal()">Add Supplier</button>
 </app-page-header>
 
@@ -7,6 +8,7 @@
     <div class="supplier-header">
       <div class="supplier-name">{{ supplier.name }}</div>
       <div>
+        <button class="btn-icon" (click)="openPayments(supplier)" aria-label="Payments" title="Payment History">💰</button>
         <button class="btn-icon" (click)="openModal(supplier)" aria-label="Edit" title="Edit">✏️</button>
         <button class="btn-icon danger" (click)="remove(supplier)" aria-label="Delete" title="Delete">🗑️</button>
       </div>
@@ -29,6 +31,12 @@
       <div class="notes-label">Notes:</div>
       <div class="notes-content">{{ supplier.notes }}</div>
     </div>
+
+    <div class="supplier-notes" *ngIf="supplier.payable > 0">
+      <div class="notes-label" style="color:var(--danger)">Outstanding Payable:</div>
+      <div class="notes-content" style="color:var(--danger);font-weight:600">₹{{ supplier.payable | number:'1.2-2' }}</div>
+      <button class="btn btn-sm btn-success" style="margin-top:8px" (click)="openPay(supplier)">Record Payment</button>
+    </div>
   </div>
 </div>
 
@@ -40,6 +48,69 @@
     <button class="btn" (click)="openModal()">Add First Supplier</button>
   </div>
 </ng-template>
+
+<!-- Record Payment Modal -->
+<div class="modal-backdrop" *ngIf="payOpen" (click.self)="closePay()">
+  <div class="modal-card" role="dialog" aria-modal="true">
+    <button class="modal-close" type="button" (click)="closePay()" aria-label="Close">&times;</button>
+    <h2>Record Payment</h2>
+    <div class="modal-sub">
+      Pay <strong>{{ paySupplier.name }}</strong>
+      <span *ngIf="paySupplier.payable > 0">(outstanding ₹{{ paySupplier.payable | number:'1.2-2' }})</span>
+    </div>
+
+    <div class="field">
+      <label>Amount (₹) *</label>
+      <input type="number" [(ngModel)]="payAmount" [max]="paySupplier.payable" step="0.01" placeholder="Enter amount" />
+    </div>
+    <div class="field">
+      <label>Note</label>
+      <input type="text" [(ngModel)]="payNote" placeholder="Payment note (optional)" />
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-outline" (click)="closePay()">Cancel</button>
+      <button class="btn btn-success" (click)="submitPay()" [disabled]="paySubmitting">
+        {{ paySubmitting ? 'Recording…' : 'Record Payment' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Payment History Modal -->
+<div class="modal-backdrop" *ngIf="paymentsOpen" (click.self)="closePayments()">
+  <div class="modal-card modal-wide" role="dialog" aria-modal="true">
+    <button class="modal-close" type="button" (click)="closePayments()" aria-label="Close">&times;</button>
+    <div class="ledger-head">
+      <div>
+        <h2>Payments — {{ paymentsSupplier.name }}</h2>
+        <div class="modal-sub">Outstanding: <strong>₹{{ paymentsSupplier.payable | number:'1.2-2' }}</strong></div>
+      </div>
+      <button class="btn btn-outline" (click)="exportPaymentsCsv()">Export CSV</button>
+    </div>
+
+    <div *ngIf="paymentsLoading" class="ledger-empty">Loading…</div>
+    <div *ngIf="!paymentsLoading && paymentRows.length === 0" class="ledger-empty">No payments recorded yet.</div>
+    <table class="ledger-table" *ngIf="!paymentsLoading && paymentRows.length > 0">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th class="num">Amount</th>
+          <th>Recorded By</th>
+          <th>Note</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let r of paymentRows">
+          <td>{{ r.createdAt | date:'short' }}</td>
+          <td class="num">₹{{ r.amount | number:'1.2-2' }}</td>
+          <td>{{ r.userName || '—' }}</td>
+          <td>{{ r.note || '—' }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
 
 <!-- Add/Edit Supplier Modal -->
 <div class="modal-backdrop" *ngIf="modalOpen" (click.self)="closeModal()">

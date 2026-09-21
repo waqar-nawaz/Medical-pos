@@ -245,3 +245,14 @@
     min-height: 250px;
   }
 }
+.gst-report-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 1000px) {
+  .gst-report-grid {
+    grid-template-columns: 1fr;
+  }
+}

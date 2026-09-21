@@ -48,6 +48,12 @@
               <span class="item-qty-display">{{ item.qty }}</span>
               <span class="item-unit-badge">{{ item.packagingUnit }}</span>
             </div>
+            <div class="item-batch" *ngIf="item.trackBatches">
+              <label>Batch</label>
+              <select class="batch-select" [value]="item.batchId" (change)="setBatch(item, $any($event.target).value)">
+                <option *ngFor="let b of item.batches" [value]="b.id">{{ batchLabel(b) }}</option>
+              </select>
+            </div>
           </div>
           <div class="item-controls">
             <div class="qty-controls">
@@ -188,13 +194,19 @@
 
       <!-- Payment Method -->
       <div class="payment-section">
-        <div class="section-label">Payment method</div>
-        <select [formControl]="paymentMethodCtrl" class="full-width">
-          <option value="CASH">Cash</option>
-          <option value="CARD">Card</option>
-          <option value="UPI">UPI</option>
-          <option value="MIXED">Mixed</option>
-        </select>
+        <div class="section-label">Payment (split across methods)</div>
+        <div class="split-grid">
+          <div class="split-row" *ngFor="let row of paymentRows">
+            <span class="split-label">{{ row.method }}</span>
+            <input type="number" min="0" step="0.01" [(ngModel)]="row.amount"
+              [placeholder]="row.method === 'CASH' ? (totals().grandTotal | number:'1.2-2') : '0'" />
+          </div>
+        </div>
+        <div class="split-total" *ngIf="splitTotal > 0">
+          <span>Total Tendered</span>
+          <span class="amount">₹{{ splitTotal | number:'1.2-2' }}</span>
+        </div>
+        <div class="split-note">Leave all at 0 to pay the full amount in Cash.</div>
       </div>
 
       <!-- Actions -->

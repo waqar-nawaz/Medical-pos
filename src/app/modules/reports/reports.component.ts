@@ -34,6 +34,13 @@ export class ReportsComponent implements OnInit {
     date: today(),
   };
 
+  // Real reports (Tranche 2)
+  invValuation: any[] = [];
+  stockMovement: any[] = [];
+  salesByCashier: any[] = [];
+  gstr1: any[] = [];
+  gstr3b: any[] = [];
+
   // Charts data
   revenueChartData?: ChartConfiguration<'line'>['data'];
   categoryChartData?: ChartConfiguration<'doughnut'>['data'];
@@ -312,6 +319,23 @@ export class ReportsComponent implements OnInit {
     this.api.get<any>('/expenses/summary', params).subscribe(r => {
       this.expSummary = r.data;
     });
+
+    // Real extra reports
+    this.api.get<any>('/reports/inventory-valuation').subscribe(r => {
+      this.invValuation = r.data || [];
+    });
+    this.api.get<any>('/reports/stock-movement', params).subscribe(r => {
+      this.stockMovement = r.data || [];
+    });
+    this.api.get<any>('/reports/sales-by-cashier', params).subscribe(r => {
+      this.salesByCashier = r.data || [];
+    });
+    this.api.get<any>('/reports/gstr1', params).subscribe(r => {
+      this.gstr1 = r.data || [];
+    });
+    this.api.get<any>('/reports/gstr3b', params).subscribe(r => {
+      this.gstr3b = r.data || [];
+    });
   }
 
   openExpenseModal(row?: any) {
@@ -406,5 +430,44 @@ export class ReportsComponent implements OnInit {
       labels: sortedDates.map(d => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })),
       values: sortedDates.map(d => dateMap[d])
     };
+  }
+
+  invValuationTotal() {
+    return this.invValuation.reduce((s, r) => s + (Number(r.valuation) || 0), 0);
+  }
+
+  exportInventoryValuationCsv() {
+    downloadCsv(`inventory-valuation_${stamp()}.csv`,
+      ['Name', 'Category', 'Stock', 'Cost', 'Valuation', 'Potential Revenue'],
+      this.invValuation.map(r => [r.name, r.category || '—', r.stockQty, r.cost, r.valuation, r.potentialRevenue]));
+    this.toast.success('Inventory valuation exported');
+  }
+
+  exportStockMovementCsv() {
+    downloadCsv(`stock-movement_${stamp()}.csv`,
+      ['Date', 'Product', 'Change', 'Reason', 'Note', 'By'],
+      this.stockMovement.map(r => [String(r.createdAt).replace('T', ' ').slice(0, 16), r.productName, r.qtyChange, r.reason, r.note || '', r.userName || '']));
+    this.toast.success('Stock movement exported');
+  }
+
+  exportSalesByCashierCsv() {
+    downloadCsv(`sales-by-cashier_${stamp()}.csv`,
+      ['Cashier', 'Email', 'Sales Count', 'Revenue'],
+      this.salesByCashier.map(r => [r.userName || '—', r.email || '', r.salesCount, r.revenue]));
+    this.toast.success('Sales by cashier exported');
+  }
+
+  exportGstr1Csv() {
+    downloadCsv(`gstr1_${stamp()}.csv`,
+      ['GST Rate %', 'Invoices', 'Qty', 'Taxable Value', 'GST', 'CGST', 'SGST'],
+      this.gstr1.map(r => [r.gstRate, r.invoiceCount, r.qty, r.taxableValue, r.gstCollected, r.cgst, r.sgst]));
+    this.toast.success('GSTR-1 exported');
+  }
+
+  exportGstr3bCsv() {
+    downloadCsv(`gstr3b_${stamp()}.csv`,
+      ['Month', 'Invoices', 'Turnover', 'Taxable Value', 'CGST', 'SGST', 'Total GST'],
+      this.gstr3b.map(r => [r.month, r.invoiceCount, r.turnover, r.taxableValue, r.cgst, r.sgst, r.gstTotal]));
+    this.toast.success('GSTR-3B exported');
   }
 }

@@ -9,6 +9,11 @@ const schema = z.object({
   notes: z.string().optional().nullable(),
 });
 
+const paymentSchema = z.object({
+  amount: z.number().positive(),
+  note:   z.string().optional().default(''),
+});
+
 function list(req, res) {
   const q = String(req.query.q || '');
   const limit = Number(req.query.limit || 50);
@@ -35,4 +40,18 @@ function remove(req, res) {
   res.json({ ok: true });
 }
 
-module.exports = { list, get, create, update, remove };
+function listPayments(req, res) {
+  res.json({ ok: true, data: Supplier.listPayments(Number(req.params.id)) });
+}
+
+function recordPayment(req, res) {
+  const body = paymentSchema.parse(req.body);
+  res.status(201).json(Supplier.recordPayment({
+    supplierId: Number(req.params.id),
+    amount:     body.amount,
+    note:       body.note,
+    userId:     req.user?.id ?? null,
+  }));
+}
+
+module.exports = { list, get, create, update, remove, listPayments, recordPayment };

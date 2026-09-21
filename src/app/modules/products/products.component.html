@@ -67,6 +67,7 @@
           </td>
           <td class="align-right">
             <button class="btn-icon" (click)="openModal(r)" title="Edit">✏️</button>
+            <button class="btn-icon" (click)="openBatches(r)" title="Manage Batches">🗂️</button>
             <button class="btn-icon" (click)="openAdjustModal(r)" title="Adjust Stock">🔧</button>
             <button class="btn-icon" (click)="openQtyModal(r)" title="Update Stock">📦</button>
             <button class="btn-icon danger" (click)="remove(r)" title="Delete">🗑️</button>
@@ -79,6 +80,46 @@
       <div style="font-size: 40px;">📦</div>
       <p>No products found</p>
       <button class="btn" (click)="openModal()">Add Medicine</button>
+    </div>
+  </div>
+</div>
+
+<!-- Batch Management Modal -->
+<div class="modal-backdrop" *ngIf="batchesModalOpen" (click.self)="closeBatches()">
+  <div class="modal-card modal-wide" role="dialog" aria-modal="true">
+    <button class="modal-close" type="button" (click)="closeBatches()" aria-label="Close">&times;</button>
+    <h2>Batches — {{ batchProduct?.name }}</h2>
+    <div class="modal-sub">Stock is dispatched oldest-expiry first (FEFO)</div>
+
+    <div class="batch-add">
+      <div class="field"><label>Batch No</label><input type="text" [(ngModel)]="newBatch.batchNo" placeholder="e.g. B-2410" /></div>
+      <div class="field"><label>Expiry</label><input type="date" [(ngModel)]="newBatch.expiryDate" /></div>
+      <div class="field"><label>Qty *</label><input type="number" [(ngModel)]="newBatch.qty" min="1" /></div>
+      <div class="field"><label>Cost (₹)</label><input type="number" [(ngModel)]="newBatch.cost" min="0" /></div>
+      <button class="btn" (click)="addBatch()">+ Add</button>
+    </div>
+
+    <table class="data-table" *ngIf="batchRows.length > 0">
+      <thead>
+        <tr><th>Batch No</th><th>Expiry</th><th>Stock</th><th>Cost (₹)</th><th>Added</th></tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let b of batchRows">
+          <td>{{ b.batchNo || '—' }}</td>
+          <td [class.expiring]="b.expiryDate && isExpiringSoon(b.expiryDate)">{{ b.expiryDate ? (b.expiryDate | date:'dd MMM yyyy') : '—' }}</td>
+          <td><span class="badge badge-stock" [class.low]="b.stockQty <= 0">{{ b.stockQty }}</span></td>
+          <td>₹{{ b.cost | number:'1.2-2' }}</td>
+          <td>{{ b.createdAt | date:'dd MMM yyyy, h:mm a' }}</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="empty-row" *ngIf="!batchesLoading && batchRows.length === 0">
+      <p>No batches yet. Add your first batch above.</p>
+    </div>
+    <div class="empty-row" *ngIf="batchesLoading"><p>Loading…</p></div>
+
+    <div class="modal-actions">
+      <button class="btn btn-outline" (click)="closeBatches()">Close</button>
     </div>
   </div>
 </div>
@@ -195,6 +236,13 @@
           <label>Strips per Box</label>
           <input type="number" formControlName="stripsPerBox" min="1" />
           <div class="field-note">e.g. 4 strips per box</div>
+        </div>
+        <div class="field checkbox-field">
+          <label class="checkbox-label">
+            <input type="checkbox" formControlName="trackBatches" />
+            <span>Stock by Batch (FEFO)</span>
+          </label>
+          <div class="field-note">Requires batch expiry tracking; stock sold oldest-first</div>
         </div>
       </div>
     </form>

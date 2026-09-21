@@ -310,15 +310,47 @@ function getSchemaInfo(db) {
   const saleCols  = db.prepare("PRAGMA table_info('sales')").all().map(r => r.name);
   const siCols    = db.prepare("PRAGMA table_info('sale_items')").all().map(r => r.name);
   const custCols  = db.prepare("PRAGMA table_info('customers')").all().map(r => r.name);
-  const hasLedger = !!db.prepare(
+const hasLedger = !!db.prepare(
     "SELECT name FROM sqlite_master WHERE type='table' AND name='customer_ledger'"
   ).get();
   return {
     hasNewSaleCols: saleCols.includes('amountPaid'),
     hasExtItemCols: siCols.includes('productDiscount'),
+    hasBatchCol:    siCols.includes('batchId'),
+    hasPaymentsCol: saleCols.includes('payments'),
     hasBalance:     custCols.includes('balance'),
     hasLedger,
   };
+}
+
+function applyPayments(payments) {
+  if (!Array.isArray(payments)) return null;
+  const clean = payments
+    .filter(p => p && ['CASH', 'CARD', 'UPI'].includes(p.method) && Number(p.amount) > 0)
+    .map(p => ({ method: p.method, amount: Math.round(Number(p.amount) * 100) / 100 }));
+  if (!clean.length) return null;
+  const total = clean.reduce((s, p) => s + p.amount, 0);
+  const methods = new Set(clean.map(p => p.method));
+  return { clean, total, method: methods.size > 1 ? 'MIXED' : clean[0].method };
+}
+
+// Pick a single batch for a sale line using FEFO (earliest expiry first).
+// If an explicit batchId is given it must belong to the product and cover qty.
+function resolveBatch(db, productId, qty, batchId) {
+  const batches = db.prepare(`
+    SELECT * FROM product_batches
+    WHERE productId = ? AND stockQty > 0
+    ORDER BY (expiryDate IS NULL), expiryDate ASC, id ASC
+  `).all(productId);
+  if (batchId) {
+    const b = batches.find(x => x.id === Number(batchId));
+    if (!b) throw new Error('Batch not found');
+    if (Number(b.stockQty) < qty) throw new Error(`Insufficient stock in batch "${b.batchNo || b.id}"`);
+    return b;
+  }
+  const b = batches.find(x => Number(x.stockQty) >= qty);
+  if (!b) throw new Error('No batch with enough stock; enter batch stock first');
+  return b;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -352,7 +384,7 @@ function list({ from, to, q = '', limit = 50, offset = 0 }) {
 // ─────────────────────────────────────────────────────────────────────────────
 function getById(id) {
   const db   = getDb();
-  const { hasBalance } = getSchemaInfo(db);
+  const { hasBalance, hasPaymentsCol } = getSchemaInfo(db);
   const sale = db.prepare(`
     SELECT s.*, c.name AS customerName, c.phone AS customerPhone${hasBalance ? ', c.balance AS customerBalance' : ''}
     FROM sales s LEFT JOIN customers c ON c.id = s.customerId WHERE s.id = ?
@@ -364,11 +396,18 @@ function getById(id) {
   if (pCols.includes('stripsPerBox')) extra.push('p.stripsPerBox');
   if (pCols.includes('packagingUnit')) extra.push('p.packagingUnit');
   const items = db.prepare(`
-    SELECT si.*, p.name AS productName, p.barcode${extra.length ? ', ' + extra.join(', ') : ''}
-    FROM sale_items si JOIN products p ON p.id = si.productId
+    SELECT si.*, p.name AS productName, p.barcode${extra.length ? ', ' + extra.join(', ') : ''},
+           pb.batchNo AS batchNo, pb.expiryDate AS batchExpiry
+    FROM sale_items si
+    JOIN products p ON p.id = si.productId
+    LEFT JOIN product_batches pb ON pb.id = si.batchId
     WHERE si.saleId = ? ORDER BY si.id ASC
   `).all(id);
-  return { ...sale, items };
+  let payments = [];
+  if (hasPaymentsCol) {
+    try { payments = JSON.parse(sale.payments || '[]'); } catch { payments = []; }
+  }
+  return { ...sale, payments, items };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -381,6 +420,7 @@ function create({
   customerName   = null,
   customerPhone  = null,
   paymentMethod  = 'CASH',
+  payments       = null,
   items          = [],
   discount       = 0,
   billDiscount   = 0,
@@ -410,7 +450,14 @@ function create({
   }
 
   // ── 3. Detect schema  (OUTSIDE transaction) ────────────────────────────
-  const { hasNewSaleCols, hasExtItemCols, hasBalance, hasLedger } = getSchemaInfo(db);
+  const { hasNewSaleCols, hasExtItemCols, hasBatchCol, hasPaymentsCol, hasBalance, hasLedger } = getSchemaInfo(db);
+
+  // ── 3b. Payments (multi-tender) ─────────────────────────────────────────
+  const tender = applyPayments(payments);
+  const effectiveAmountPaid = tender
+    ? tender.total
+    : (amountPaid !== null ? Math.max(0, Number(amountPaid)) : null);
+  const effectiveMethod = tender ? tender.method : paymentMethod;
 
   // ── 4. Pre-fetch prevBalance for existing customer  (OUTSIDE tx) ────────
   let prevBalance = 0;
@@ -446,16 +493,26 @@ function create({
       `);
 
   // Sale item INSERT variants
-  const insertItemStmt = hasExtItemCols
+  const insertItemStmt = hasExtItemCols && hasBatchCol
     ? db.prepare(`
         INSERT INTO sale_items
-          (saleId,productId,qty,price,productDiscount,discountAmount,gstRate,gstAmount,lineTotal,packagingUnit)
-        VALUES (?,?,?,?,?,?,?,?,?,?)
+          (saleId,productId,qty,price,productDiscount,discountAmount,gstRate,gstAmount,lineTotal,packagingUnit,batchId)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?)
       `)
-    : db.prepare(`
-        INSERT INTO sale_items (saleId,productId,qty,price,gstRate,gstAmount,lineTotal)
-        VALUES (?,?,?,?,?,?,?)
-      `);
+    : hasExtItemCols
+      ? db.prepare(`
+          INSERT INTO sale_items
+            (saleId,productId,qty,price,productDiscount,discountAmount,gstRate,gstAmount,lineTotal,packagingUnit)
+          VALUES (?,?,?,?,?,?,?,?,?,?)
+        `)
+      : db.prepare(`
+          INSERT INTO sale_items (saleId,productId,qty,price,gstRate,gstAmount,lineTotal)
+          VALUES (?,?,?,?,?,?,?)
+        `);
+
+  const updateBatchStockStmt = hasBatchCol
+    ? db.prepare('UPDATE product_batches SET stockQty = stockQty - ?, updatedAt = ? WHERE id = ?')
+    : null;
 
   const updateStockStmt   = db.prepare('UPDATE products SET stockQty = stockQty - ?, updatedAt = ? WHERE id = ?');
   const updateCustBalance = hasBalance
@@ -508,6 +565,12 @@ function create({
       if (qty <= 0) throw new Error('Invalid quantity');
       if (p.stockQty < qty) throw new Error(`Insufficient stock for ${p.name}`);
 
+      // Batch (FEFO) resolution
+      let batch = null;
+      if (it.batchId || p.trackBatches === 1) {
+        if (hasBatchCol) batch = resolveBatch(db, p.id, qty, it.batchId || null);
+      }
+
       const price    = Number(it.price    ?? p.price);
       const pDisc    = Number(it.productDiscount ?? p.productDiscount ?? 0);
       const gstRate  = Number(it.gstRate  ?? p.gstRate ?? 0);
@@ -523,7 +586,7 @@ function create({
       totalProdDiscAmt += discAmt;
       gstTotal         += gstAmt;
 
-      return { productId: p.id, qty, price, pDisc, discAmt, gstRate, gstAmt, lineTotal, packUnit };
+      return { productId: p.id, qty, price, pDisc, discAmt, gstRate, gstAmt, lineTotal, packUnit, batch };
     });
 
     const afterProdDisc = subTotal - totalProdDiscAmt + gstTotal;
@@ -531,33 +594,43 @@ function create({
     const billDiscAmt   = afterProdDisc * (billDiscPct / 100);
     const flatDiscount  = Math.max(0, Number(discount || 0));
     const grandTotal    = Math.max(0, afterProdDisc - billDiscAmt - flatDiscount);
-    const paid          = amountPaid !== null ? Math.max(0, Number(amountPaid)) : grandTotal;
+    const paid          = effectiveAmountPaid !== null ? Math.max(0, effectiveAmountPaid) : grandTotal;
     const balanceDue    = Math.max(0, grandTotal - paid);
 
     // Insert sale — userId and customerId are now guaranteed valid
     const saleInfo = hasNewSaleCols
       ? insertSaleStmt.run(
-          invoiceNo, safeUserId, resolvedId, paymentMethod,
+          invoiceNo, safeUserId, resolvedId, effectiveMethod,
           subTotal, gstTotal, totalProdDiscAmt + flatDiscount, billDiscAmt, grandTotal,
           paid, balanceDue, prevBalance,
           now, now, items.length
         )
       : insertSaleStmt.run(
-          invoiceNo, safeUserId, resolvedId, paymentMethod,
+          invoiceNo, safeUserId, resolvedId, effectiveMethod,
           subTotal, gstTotal, totalProdDiscAmt + flatDiscount, grandTotal,
           now, now, items.length
         );
 
     const saleId = saleInfo.lastInsertRowid;
 
+    // Record multi-tender breakdown
+    if (tender && hasPaymentsCol) {
+      db.prepare('UPDATE sales SET payments = ? WHERE id = ?').run(JSON.stringify(tender.clean), saleId);
+    }
+
     // Insert items + update stock
     for (const it of processed) {
-      if (hasExtItemCols) {
+      if (hasExtItemCols && hasBatchCol) {
+        insertItemStmt.run(saleId, it.productId, it.qty, it.price, it.pDisc, it.discAmt, it.gstRate, it.gstAmt, it.lineTotal, it.packUnit, it.batch ? it.batch.id : null);
+      } else if (hasExtItemCols) {
         insertItemStmt.run(saleId, it.productId, it.qty, it.price, it.pDisc, it.discAmt, it.gstRate, it.gstAmt, it.lineTotal, it.packUnit);
       } else {
         insertItemStmt.run(saleId, it.productId, it.qty, it.price, it.gstRate, it.gstAmt, it.lineTotal);
       }
       updateStockStmt.run(it.qty, now, it.productId);
+      if (it.batch && updateBatchStockStmt) {
+        updateBatchStockStmt.run(it.qty, now, it.batch.id);
+      }
     }
 
     // Update customer balance + ledger
@@ -585,11 +658,13 @@ function create({
 // ─────────────────────────────────────────────────────────────────────────────
 function edit(saleId, { items = [], billDiscount = 0, amountPaid = null }) {
   const db = getDb();
-  const { hasNewSaleCols, hasExtItemCols, hasBalance, hasLedger } = getSchemaInfo(db);
+  const { hasNewSaleCols, hasExtItemCols, hasBatchCol, hasBalance, hasLedger } = getSchemaInfo(db);
 
-  const insertItemStmt = hasExtItemCols
-    ? db.prepare('INSERT INTO sale_items (saleId,productId,qty,price,productDiscount,discountAmount,gstRate,gstAmount,lineTotal,packagingUnit) VALUES (?,?,?,?,?,?,?,?,?,?)')
-    : db.prepare('INSERT INTO sale_items (saleId,productId,qty,price,gstRate,gstAmount,lineTotal) VALUES (?,?,?,?,?,?,?)');
+  const insertItemStmt = hasExtItemCols && hasBatchCol
+    ? db.prepare('INSERT INTO sale_items (saleId,productId,qty,price,productDiscount,discountAmount,gstRate,gstAmount,lineTotal,packagingUnit,batchId) VALUES (?,?,?,?,?,?,?,?,?,?,?)')
+    : hasExtItemCols
+      ? db.prepare('INSERT INTO sale_items (saleId,productId,qty,price,productDiscount,discountAmount,gstRate,gstAmount,lineTotal,packagingUnit) VALUES (?,?,?,?,?,?,?,?,?,?)')
+      : db.prepare('INSERT INTO sale_items (saleId,productId,qty,price,gstRate,gstAmount,lineTotal) VALUES (?,?,?,?,?,?,?)');
 
   return db.transaction(() => {
     const now  = new Date().toISOString();
@@ -600,6 +675,9 @@ function edit(saleId, { items = [], billDiscount = 0, amountPaid = null }) {
     // Restore stock
     for (const oi of orig.items) {
       db.prepare('UPDATE products SET stockQty = stockQty + ?, updatedAt = ? WHERE id = ?').run(oi.qty, now, oi.productId);
+      if (hasBatchCol && oi.batchId) {
+        db.prepare('UPDATE product_batches SET stockQty = stockQty + ?, updatedAt = ? WHERE id = ?').run(oi.qty, now, oi.batchId);
+      }
     }
     db.prepare('DELETE FROM sale_items WHERE saleId = ?').run(saleId);
 
@@ -618,7 +696,12 @@ function edit(saleId, { items = [], billDiscount = 0, amountPaid = null }) {
       const gstAmt   = afterDisc * (gstRate / 100);
       const lineTotal= afterDisc + gstAmt;
       subTotal += lineBase; totalProdDiscAmt += discAmt; gstTotal += gstAmt;
-      return { p, qty, price, pDisc, discAmt, gstRate, gstAmt, lineTotal, packUnit };
+
+      let batch = null;
+      if (qty > 0 && (it.batchId || p.trackBatches === 1)) {
+        if (hasBatchCol) batch = resolveBatch(db, p.id, qty, it.batchId || null);
+      }
+      return { p, qty, price, pDisc, discAmt, gstRate, gstAmt, lineTotal, packUnit, batch };
     });
 
     const afterProdDisc = subTotal - totalProdDiscAmt + gstTotal;
@@ -632,12 +715,17 @@ function edit(saleId, { items = [], billDiscount = 0, amountPaid = null }) {
     for (const it of processed) {
       if (it.qty > 0) {
         if (it.p.stockQty < it.qty) throw new Error(`Insufficient stock for ${it.p.name}`);
-        if (hasExtItemCols) {
+        if (hasExtItemCols && hasBatchCol) {
+          insertItemStmt.run(saleId, it.p.id, it.qty, it.price, it.pDisc, it.discAmt, it.gstRate, it.gstAmt, it.lineTotal, it.packUnit, it.batch ? it.batch.id : null);
+        } else if (hasExtItemCols) {
           insertItemStmt.run(saleId, it.p.id, it.qty, it.price, it.pDisc, it.discAmt, it.gstRate, it.gstAmt, it.lineTotal, it.packUnit);
         } else {
           insertItemStmt.run(saleId, it.p.id, it.qty, it.price, it.gstRate, it.gstAmt, it.lineTotal);
         }
         db.prepare('UPDATE products SET stockQty = stockQty - ?, updatedAt = ? WHERE id = ?').run(it.qty, now, it.p.id);
+        if (it.batch && hasBatchCol) {
+          db.prepare('UPDATE product_batches SET stockQty = stockQty - ?, updatedAt = ? WHERE id = ?').run(it.qty, now, it.batch.id);
+        }
         newItemCount++;
       }
     }

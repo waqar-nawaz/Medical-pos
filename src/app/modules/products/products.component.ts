@@ -43,6 +43,11 @@ export class ProductsComponent implements OnInit {
   adjModalOpen = false;
   adjRows: any[] = [];
   adjLoading = false;
+  batchesModalOpen = false;
+  batchProduct: any = null;
+  batchRows: any[] = [];
+  batchesLoading = false;
+  newBatch = { batchNo: '', expiryDate: '', qty: 1, cost: 0 };
   form: any;
 
   constructor(private fb: FormBuilder, private api: ApiService, private toast: ToastService, private confirm: ConfirmService) {
@@ -66,6 +71,7 @@ export class ProductsComponent implements OnInit {
       unitsPerStrip:   [1, [Validators.min(1)]],
       stripsPerBox:    [1, [Validators.min(1)]],
       packagingUnit:   ['unit'],
+      trackBatches:    [false],
     });
   }
 
@@ -118,9 +124,9 @@ export class ProductsComponent implements OnInit {
     this.editing = row ?? null;
     this.submitted = false;
     if (row) {
-      this.form.patchValue({ ...row, isActive: row.isActive === 1 || row.isActive === true, supplierId: row.supplierId ?? null, expiryDate: row.expiryDate || '', shelf: row.shelf || '', productDiscount: row.productDiscount || 0, unitsPerStrip: row.unitsPerStrip || 1, stripsPerBox: row.stripsPerBox || 1, packagingUnit: row.packagingUnit || 'unit' });
+      this.form.patchValue({ ...row, isActive: row.isActive === 1 || row.isActive === true, supplierId: row.supplierId ?? null, expiryDate: row.expiryDate || '', shelf: row.shelf || '', productDiscount: row.productDiscount || 0, unitsPerStrip: row.unitsPerStrip || 1, stripsPerBox: row.stripsPerBox || 1, packagingUnit: row.packagingUnit || 'unit', trackBatches: row.trackBatches === 1 || row.trackBatches === true });
     } else {
-      this.form.reset({ name: '', sku: '', barcode: '', category: 'Tablet', batchNo: '', unit: 'pcs', price: 0, cost: 0, gstRate: 0, stockQty: 0, reorderLevel: 10, expiryDate: '', supplierId: null, isActive: true, productDiscount: 0, unitsPerStrip: 1, stripsPerBox: 1, packagingUnit: 'unit' });
+      this.form.reset({ name: '', sku: '', barcode: '', category: 'Tablet', batchNo: '', unit: 'pcs', price: 0, cost: 0, gstRate: 0, stockQty: 0, reorderLevel: 10, expiryDate: '', supplierId: null, isActive: true, productDiscount: 0, unitsPerStrip: 1, stripsPerBox: 1, packagingUnit: 'unit', trackBatches: false });
     }
     this.productModalOpen = true;
   }
@@ -194,6 +200,47 @@ export class ProductsComponent implements OnInit {
 
   reasonLabel(v: string) {
     return fmtReason(v);
+  }
+
+  openBatches(row: any) {
+    this.batchProduct = row;
+    this.batchRows = [];
+    this.newBatch = { batchNo: '', expiryDate: '', qty: 1, cost: row.cost || 0 };
+    this.batchesModalOpen = true;
+    this.batchesLoading = true;
+    this.loadBatches();
+  }
+
+  loadBatches() {
+    this.api.get<any>(`/products/${this.batchProduct.id}/batches`).subscribe({
+      next: (r) => { this.batchRows = r.data || []; this.batchesLoading = false; },
+      error: () => { this.batchesLoading = false; this.toast.error('Failed to load batches'); },
+    });
+  }
+
+  closeBatches() {
+    this.batchesModalOpen = false;
+    this.batchProduct = null;
+    this.batchRows = [];
+  }
+
+  addBatch() {
+    const qty = Math.floor(Number(this.newBatch.qty));
+    if (!(qty > 0)) { this.toast.warning('Enter a valid quantity'); return; }
+    this.api.post<any>(`/products/${this.batchProduct.id}/batches`, {
+      batchNo: this.newBatch.batchNo?.trim() || null,
+      expiryDate: this.newBatch.expiryDate || null,
+      qty,
+      cost: Number(this.newBatch.cost) || 0,
+    }).subscribe({
+      next: () => {
+        this.toast.success('Batch added');
+        this.newBatch = { batchNo: '', expiryDate: '', qty: 1, cost: Number(this.newBatch.cost) || 0 };
+        this.loadBatches();
+        this.load();
+      },
+      error: (err) => this.toast.error(err?.error?.message || 'Failed to add batch'),
+    });
   }
 
   exportCsv() {

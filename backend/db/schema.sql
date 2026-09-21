@@ -71,6 +71,7 @@ CREATE TABLE IF NOT EXISTS products (
   unitsPerStrip INTEGER NOT NULL DEFAULT 1,
   stripsPerBox INTEGER NOT NULL DEFAULT 1,
   packagingUnit TEXT NOT NULL DEFAULT 'unit',
+  trackBatches INTEGER NOT NULL DEFAULT 0,
   FOREIGN KEY (supplierId) REFERENCES suppliers(id) ON DELETE SET NULL
 );
 
@@ -95,6 +96,7 @@ CREATE TABLE IF NOT EXISTS sales (
   balanceDue REAL NOT NULL DEFAULT 0,
   billDiscount REAL NOT NULL DEFAULT 0,
   prevBalance REAL NOT NULL DEFAULT 0,
+  payments TEXT NOT NULL DEFAULT '[]',
   FOREIGN KEY (userId) REFERENCES users(id),
   FOREIGN KEY (customerId) REFERENCES customers(id) ON DELETE SET NULL
 );
@@ -111,11 +113,40 @@ CREATE TABLE IF NOT EXISTS sale_items (
   productDiscount REAL NOT NULL DEFAULT 0,
   discountAmount REAL NOT NULL DEFAULT 0,
   packagingUnit TEXT NOT NULL DEFAULT 'unit',
+  batchId INTEGER,
   FOREIGN KEY (saleId) REFERENCES sales(id) ON DELETE CASCADE,
-  FOREIGN KEY (productId) REFERENCES products(id)
+  FOREIGN KEY (productId) REFERENCES products(id),
+  FOREIGN KEY (batchId) REFERENCES product_batches(id) ON DELETE SET NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_sales_createdAt ON sales(createdAt);
+
+CREATE TABLE IF NOT EXISTS product_batches (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  productId INTEGER NOT NULL,
+  batchNo TEXT,
+  expiryDate TEXT,
+  stockQty INTEGER NOT NULL DEFAULT 0,
+  cost REAL NOT NULL DEFAULT 0,
+  createdAt TEXT NOT NULL,
+  updatedAt TEXT NOT NULL,
+  FOREIGN KEY (productId) REFERENCES products(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_product_batches_product ON product_batches(productId);
+
+CREATE TABLE IF NOT EXISTS supplier_payments (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  supplierId INTEGER NOT NULL,
+  amount REAL NOT NULL,
+  note TEXT,
+  userId INTEGER,
+  createdAt TEXT NOT NULL,
+  FOREIGN KEY (supplierId) REFERENCES suppliers(id) ON DELETE CASCADE,
+  FOREIGN KEY (userId) REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_supplier_payments_supplier ON supplier_payments(supplierId);
 
 CREATE TABLE IF NOT EXISTS returns (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -144,6 +175,8 @@ CREATE TABLE IF NOT EXISTS purchase_orders (
   userId INTEGER NOT NULL,
   supplierId INTEGER,
   status TEXT NOT NULL CHECK (status IN ('DRAFT','SENT','RECEIVED')) DEFAULT 'DRAFT',
+  paid REAL NOT NULL DEFAULT 0,
+  grandTotal REAL NOT NULL DEFAULT 0,
   createdAt TEXT NOT NULL,
   updatedAt TEXT NOT NULL,
   FOREIGN KEY (userId) REFERENCES users(id),

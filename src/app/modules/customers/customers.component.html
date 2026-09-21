@@ -1,4 +1,5 @@
 <app-page-header title="Customers" subtitle="Maintain customer records and loyalty points">
+  <button class="btn btn-outline" *ngIf="rows.length" (click)="exportCsv()">Export CSV</button>
   <button class="btn" (click)="openModal()">Add Customer</button>
 </app-page-header>
 
@@ -7,6 +8,7 @@
     <div class="customer-header">
       <div class="customer-name">{{ customer.name }}</div>
       <div>
+        <button class="btn-icon" (click)="openLedger(customer)" aria-label="Ledger" title="Account Ledger">📒</button>
         <button class="btn-icon" (click)="openModal(customer)" aria-label="Edit" title="Edit">✏️</button>
         <button class="btn-icon danger" (click)="remove(customer)" aria-label="Delete" title="Delete">🗑️</button>
       </div>
@@ -34,6 +36,7 @@
     <div class="customer-notes" *ngIf="customer.balance > 0">
       <div class="notes-label" style="color:var(--danger)">Outstanding Balance:</div>
       <div class="notes-content" style="color:var(--danger);font-weight:600">₹{{ customer.balance | number:'1.2-2' }}</div>
+      <button class="btn btn-sm btn-success" style="margin-top:8px" (click)="openPayment(customer)">Collect Payment</button>
     </div>
   </div>
 </div>
@@ -46,6 +49,75 @@
     <button class="btn" (click)="openModal()">Add First Customer</button>
   </div>
 </ng-template>
+
+<!-- Collect Payment Modal -->
+<div class="modal-backdrop" *ngIf="payOpen" (click.self)="closePayment()">
+  <div class="modal-card" role="dialog" aria-modal="true">
+    <button class="modal-close" type="button" (click)="closePayment()" aria-label="Close">&times;</button>
+    <h2>Collect Payment</h2>
+    <div class="modal-sub">
+      Record payment from <strong>{{ payCustomer.name }}</strong>
+      <span *ngIf="payCustomer.balance > 0">(outstanding ₹{{ payCustomer.balance | number:'1.2-2' }})</span>
+    </div>
+
+    <div class="field">
+      <label>Amount (₹) *</label>
+      <input type="number" [(ngModel)]="payAmount" [max]="payCustomer.balance" step="0.01" placeholder="Enter amount" />
+    </div>
+    <div class="field">
+      <label>Note</label>
+      <input type="text" [(ngModel)]="payNote" placeholder="Payment note (optional)" />
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-outline" (click)="closePayment()">Cancel</button>
+      <button class="btn btn-success" (click)="submitPayment()" [disabled]="paySubmitting">
+        {{ paySubmitting ? 'Recording…' : 'Record Payment' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Ledger Modal -->
+<div class="modal-backdrop" *ngIf="ledgerOpen" (click.self)="closeLedger()">
+  <div class="modal-card modal-wide" role="dialog" aria-modal="true">
+    <button class="modal-close" type="button" (click)="closeLedger()" aria-label="Close">&times;</button>
+    <div class="ledger-head">
+      <div>
+        <h2>Account Ledger — {{ ledgerCustomer.name }}</h2>
+        <div class="modal-sub">Balance: <strong>₹{{ ledgerCustomer.balance | number:'1.2-2' }}</strong></div>
+      </div>
+      <button class="btn btn-outline" (click)="exportLedgerCsv()">Export CSV</button>
+    </div>
+
+    <div *ngIf="ledgerLoading" class="ledger-empty">Loading…</div>
+    <div *ngIf="!ledgerLoading && ledgerRows.length === 0" class="ledger-empty">No ledger entries yet.</div>
+    <table class="ledger-table" *ngIf="!ledgerLoading && ledgerRows.length > 0">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Bill</th>
+          <th>Type</th>
+          <th class="num">Debit</th>
+          <th class="num">Credit</th>
+          <th class="num">Balance</th>
+          <th>Note</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let r of ledgerRows">
+          <td>{{ r.createdAt | date:'short' }}</td>
+          <td>{{ r.billId ?? '—' }}</td>
+          <td><span class="chip" [ngClass]="r.type === 'PAYMENT' || r.type === 'RETURN' ? 'chip-green' : 'chip-blue'">{{ r.type }}</span></td>
+          <td class="num">{{ r.debit > 0 ? '₹' + (r.debit | number:'1.2-2') : '—' }}</td>
+          <td class="num">{{ r.credit > 0 ? '₹' + (r.credit | number:'1.2-2') : '—' }}</td>
+          <td class="num">₹{{ r.balance | number:'1.2-2' }}</td>
+          <td>{{ r.note || '—' }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
 
 <!-- Add/Edit Modal -->
 <div class="modal-backdrop" *ngIf="modalOpen" (click.self)="closeModal()">

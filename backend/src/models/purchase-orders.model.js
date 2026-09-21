@@ -4,19 +4,23 @@ const { AppError } = require('../utils/errors');
 
 function list({ limit = 50, offset = 0 }) {
   const db = getDb();
-  return db.prepare(`
-    SELECT po.*, s.name AS supplierName
+  const rows = db.prepare(`
+    SELECT po.*, s.name AS supplierName,
+           CASE WHEN po.status = 'RECEIVED' THEN (po.grandTotal - po.paid) ELSE 0 END AS outstanding
     FROM purchase_orders po
     LEFT JOIN suppliers s ON s.id = po.supplierId
     ORDER BY po.createdAt DESC
     LIMIT ? OFFSET ?
   `).all(limit, offset);
+  rows.forEach(r => { r.outstanding = Number(r.outstanding || 0); });
+  return rows;
 }
 
 function getById(id) {
   const db = getDb();
   const po = db.prepare('SELECT * FROM purchase_orders WHERE id = ?').get(id);
   if (!po) return null;
+  po.outstanding = po.status === 'RECEIVED' ? (Number(po.grandTotal) - Number(po.paid)) : 0;
   const items = db.prepare(`
     SELECT poi.*, p.name AS productName
     FROM purchase_order_items poi
@@ -44,6 +48,7 @@ function create({ userId, supplierId = null, items = [] }) {
       VALUES (?, ?, ?, ?)
     `);
 
+    let grandTotal = 0;
     for (const it of items) {
       const qty = Number(it.qty || 0);
       if (qty <= 0) continue;
@@ -51,8 +56,10 @@ function create({ userId, supplierId = null, items = [] }) {
       if (!product) throw new AppError('Invalid product', 400, 'INVALID_PRODUCT');
       const cost = Number(it.cost ?? product.cost ?? 0);
       itemStmt.run(poId, it.productId, qty, cost);
+      grandTotal += qty * cost;
     }
 
+    db.prepare('UPDATE purchase_orders SET grandTotal = ? WHERE id = ?').run(grandTotal, poId);
     return getById(poId);
   })();
 }
@@ -72,9 +79,23 @@ function receive(poId, userId) {
       VALUES (?, ?, ?, 'RECEIVED', ?, ?)
     `);
 
+    const hasBatches = !!db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='product_batches'").get();
+    const batchStmt = hasBatches
+      ? db.prepare(`
+          INSERT INTO product_batches (productId, batchNo, expiryDate, stockQty, cost, createdAt, updatedAt)
+          VALUES (?, ?, NULL, ?, ?, ?, ?)
+        `)
+      : null;
+
     for (const it of po.items) {
       stockStmt.run(it.qty, it.cost, now, it.productId);
       adjStmt.run(it.productId, userId, it.qty, `PO ${po.poNo}`, now);
+      if (batchStmt) {
+        const p = db.prepare('SELECT trackBatches FROM products WHERE id = ?').get(it.productId);
+        if (hasBatches && p && p.trackBatches === 1) {
+          batchStmt.run(it.productId, `PO-${po.poNo}`, it.qty, it.cost, now, now);
+        }
+      }
     }
 
     db.prepare(`UPDATE purchase_orders SET status='RECEIVED', updatedAt=? WHERE id=?`).run(now, poId);

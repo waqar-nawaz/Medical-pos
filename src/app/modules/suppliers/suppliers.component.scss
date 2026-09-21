@@ -110,3 +110,51 @@
     gap: 12px;
   }
 }
+.ledger-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.ledger-empty {
+  padding: 32px;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.ledger-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+
+  th, td {
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+  }
+
+  th {
+    color: var(--text-muted);
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
+
+  .num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  tbody tr:hover {
+    background: var(--surface-hover);
+  }
+}
+
+@media (max-width: 768px) {
+  .ledger-head {
+    flex-direction: column;
+  }
+}

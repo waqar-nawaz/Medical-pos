@@ -8,6 +8,12 @@ const itemSchema = z.object({
   gstRate:         z.number().min(0).max(100).optional(),
   productDiscount: z.number().min(0).max(100).optional().default(0),
   packagingUnit:   z.enum(['unit','strip','box']).optional().default('unit'),
+  batchId:         z.number().int().optional().nullable(),
+});
+
+const paymentTenderSchema = z.object({
+  method: z.enum(['CASH','CARD','UPI']),
+  amount: z.number().positive(),
 });
 
 const createSchema = z.object({
@@ -15,7 +21,8 @@ const createSchema = z.object({
   isNewCustomer:  z.boolean().optional().default(false),
   customerName:   z.string().optional().nullable(),
   customerPhone:  z.string().optional().nullable(),
-  paymentMethod:  z.enum(['CASH','CARD','MIXED']).default('CASH'),
+  paymentMethod:  z.enum(['CASH','CARD','UPI','MIXED']).default('CASH'),
+  payments:       z.array(paymentTenderSchema).max(4).optional(),
   discount:       z.number().min(0).default(0),        // legacy flat discount
   billDiscount:   z.number().min(0).max(100).default(0), // % bill-level discount
   amountPaid:     z.number().nonnegative().optional().nullable(),

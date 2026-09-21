@@ -3,6 +3,8 @@ const Ctrl = require('../controllers/suppliers.controller');
 const { auth, requirePermission } = require('../middlewares/auth.middleware');
 
 router.get('/', auth(true), requirePermission('suppliers'), Ctrl.list);
+router.get('/:id/payments', auth(true), requirePermission('suppliers'), Ctrl.listPayments);
+router.post('/:id/payments', auth(true), requirePermission('suppliers'), Ctrl.recordPayment);
 router.get('/:id', auth(true), requirePermission('suppliers'), Ctrl.get);
 router.post('/', auth(true), requirePermission('suppliers'), Ctrl.create);
 router.put('/:id', auth(true), requirePermission('suppliers'), Ctrl.update);

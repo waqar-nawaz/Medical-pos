@@ -3,6 +3,7 @@ import { FormBuilder, Validators } from '@angular/forms';
 import { ApiService } from '../../core/services/api.service';
 import { ToastService } from '../../core/services/toast.service';
 import { ConfirmService } from '../../core/services/confirm.service';
+import { downloadCsv, stamp } from '../../core/utils/export-csv';
 
 @Component({
   templateUrl: './suppliers.component.html',
@@ -14,6 +15,17 @@ export class SuppliersComponent implements OnInit {
   modalOpen = false;
   submitted = false;
   form: any;
+
+  paySupplier: any = null;
+  payOpen = false;
+  payAmount = 0;
+  payNote = '';
+  paySubmitting = false;
+
+  paymentsSupplier: any = null;
+  paymentsOpen = false;
+  paymentRows: any[] = [];
+  paymentsLoading = false;
 
   constructor(
     private fb: FormBuilder,
@@ -120,5 +132,76 @@ export class SuppliersComponent implements OnInit {
         }
       });
     }
+  }
+
+  openPay(supplier: any) {
+    this.paySupplier = supplier;
+    this.payAmount = 0;
+    this.payNote = '';
+    this.payOpen = true;
+  }
+
+  closePay() {
+    this.payOpen = false;
+    this.paySupplier = null;
+  }
+
+  submitPay() {
+    if (!(Number(this.payAmount) > 0)) {
+      this.toast.warning('Enter a valid payment amount');
+      return;
+    }
+    this.paySubmitting = true;
+    this.api.post<any>(`/suppliers/${this.paySupplier.id}/payments`, {
+      amount: Number(this.payAmount),
+      note: this.payNote,
+    }).subscribe({
+      next: (r: any) => {
+        this.toast.success(`Payment of ₹${r?.amount || this.payAmount} recorded`);
+        this.closePay();
+        this.load();
+      },
+      error: (err) => this.toast.error(err?.error?.message || 'Failed to record payment'),
+    }).add(() => (this.paySubmitting = false));
+  }
+
+  openPayments(supplier: any) {
+    this.paymentsSupplier = supplier;
+    this.paymentRows = [];
+    this.paymentsOpen = true;
+    this.paymentsLoading = true;
+    this.api.get<any>(`/suppliers/${supplier.id}/payments`).subscribe({
+      next: (r) => {
+        this.paymentRows = r.data || [];
+        this.paymentsLoading = false;
+      },
+      error: () => {
+        this.paymentsLoading = false;
+        this.toast.error('Failed to load payment history');
+      },
+    });
+  }
+
+  closePayments() {
+    this.paymentsOpen = false;
+    this.paymentsSupplier = null;
+    this.paymentRows = [];
+  }
+
+  exportPaymentsCsv() {
+    if (!this.paymentsSupplier) return;
+    const rows = this.paymentRows.map(r => [
+      r.createdAt ? String(r.createdAt).replace('T', ' ').slice(0, 16) : '',
+      r.amount ?? 0,
+      r.userName ?? '',
+      r.note ?? '',
+    ]);
+    downloadCsv(`supplier-payments-${this.paymentsSupplier.name}-${stamp()}.csv`,
+      ['Date', 'Amount', 'Recorded By', 'Note'], rows);
+  }
+
+  exportCsv() {
+    const rows = this.rows.map(s => [s.name, s.phone ?? '', s.email ?? '', s.address ?? '', s.payable ?? 0, s.notes ?? '']);
+    downloadCsv(`suppliers-${stamp()}.csv`, ['Name', 'Phone', 'Email', 'Address', 'Payable', 'Notes'], rows);
   }
 }

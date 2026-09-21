@@ -138,6 +138,91 @@ function profitReport({ from, to }) {
   return pnl({ from, to });
 }
 
+function inventoryValuation() {
+  const db = getDb();
+  return db.prepare(`
+    SELECT p.id, p.name, p.category, p.unit, p.stockQty, p.cost, p.price,
+           ROUND(p.stockQty * p.cost, 2) AS valuation,
+           ROUND(p.stockQty * p.price, 2) AS potentialRevenue
+    FROM products p
+    WHERE p.isActive = 1
+    ORDER BY valuation DESC, p.name ASC
+  `).all();
+}
+
+function stockMovementReport({ from, to }) {
+  const db = getDb();
+  const { where, params } = periodWhere('sa.createdAt', from, to);
+  return db.prepare(`
+    SELECT sa.id, sa.productId, p.name AS productName, sa.qtyChange, sa.reason, sa.note,
+           sa.createdAt, u.name AS userName
+    FROM stock_adjustments sa
+    JOIN products p ON p.id = sa.productId
+    LEFT JOIN users u ON u.id = sa.userId
+    ${where}
+    ORDER BY sa.createdAt DESC, sa.id DESC
+    LIMIT 500
+  `).all(...params);
+}
+
+function salesByCashier({ from, to }) {
+  const db = getDb();
+  const { where, params } = periodWhere('s.createdAt', from, to);
+  return db.prepare(`
+    SELECT u.id AS userId, u.name AS userName, u.email,
+           COUNT(s.id) AS salesCount,
+           COALESCE(SUM(s.grandTotal), 0) AS revenue
+    FROM sales s
+    LEFT JOIN users u ON u.id = s.userId
+    ${where}
+    GROUP BY u.id
+    ORDER BY revenue DESC, salesCount DESC
+  `).all(...params);
+}
+
+// GSTR-1 outward supplies summary (rate-wise aggregation)
+function gstGstr1({ from, to }) {
+  const db = getDb();
+  let where = '', params = [];
+  if (from && to) { where = 'WHERE s.createdAt BETWEEN ? AND ?'; params = [from, to]; }
+  return db.prepare(`
+    SELECT ROUND(si.gstRate, 1) AS gstRate,
+           COUNT(DISTINCT s.id) AS invoiceCount,
+           COALESCE(SUM(si.qty), 0) AS qty,
+           COALESCE(SUM(si.lineTotal - si.gstAmount), 0) AS taxableValue,
+           COALESCE(SUM(si.gstAmount), 0) AS gstCollected,
+           COALESCE(SUM(si.gstAmount)/2, 0) AS cgst,
+           COALESCE(SUM(si.gstAmount)/2, 0) AS sgst
+    FROM sale_items si
+    JOIN sales s ON s.id = si.saleId
+    ${where}
+    GROUP BY ROUND(si.gstRate, 1)
+    ORDER BY gstRate ASC
+  `).all(...params);
+}
+
+// GSTR-3B monthly summary
+function gstGstr3b({ from, to }) {
+  const db = getDb();
+  const { where, params } = periodWhere('s.createdAt', from, to);
+  return db.prepare(`
+    SELECT strftime('%Y-%m', s.createdAt) AS month,
+           COUNT(*) AS invoiceCount,
+           COALESCE(SUM(s.grandTotal), 0) AS turnover,
+           COALESCE(SUM(s.grandTotal - s.gstTotal), 0) AS taxableValue,
+           COALESCE(SUM(s.gstTotal)/2, 0) AS cgst,
+           COALESCE(SUM(s.gstTotal)/2, 0) AS sgst,
+           COALESCE(SUM(s.gstTotal), 0) AS gstTotal
+    FROM sales s
+    ${where}
+    GROUP BY strftime('%Y-%m', s.createdAt)
+    ORDER BY month ASC
+  `).all(...params);
+}
+
+// Additional report placeholders (return consistent shapes so UI works)
+function emptyList() { return []; }
+
 module.exports = {
   summary,
   topProducts,
@@ -146,15 +231,15 @@ module.exports = {
   lowStockReport,
   expiryReport,
   profitReport,
-  // placeholders for the 15+ report types mentioned in the spec
-  inventoryValuation: emptyList,
+  inventoryValuation,
+  stockMovementReport,
+  salesByCashier,
+  gstGstr1,
+  gstGstr3b,
+  // placeholders still pending (consistent shapes so UI works)
   salesByDay: emptyList,
-  salesByCashier: emptyList,
   customerLoyaltyReport: emptyList,
   returnsReport: emptyList,
   purchaseOrdersReport: emptyList,
-  gstGstr1: emptyList,
-  gstGstr3b: emptyList,
   supplierLedger: emptyList,
-  stockMovementReport: emptyList,
 };

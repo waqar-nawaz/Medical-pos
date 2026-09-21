@@ -15,6 +15,11 @@ function create({ userId, saleId, reason = '', items = [] }) {
   const db = getDb();
   const now = new Date().toISOString();
 
+  const hasBalance   = !!db.prepare("PRAGMA table_info('customers')").all().map(r => r.name).includes('balance');
+  const hasLedgerCol = !!db.prepare("PRAGMA table_info('customer_ledger')").all().map(r => r.name).includes('credit');
+  const hasPaidCol   = !!db.prepare("PRAGMA table_info('sales')").all().map(r => r.name).includes('amountPaid');
+  const hasBatchCol  = !!db.prepare("PRAGMA table_info('sale_items')").all().map(r => r.name).includes('batchId');
+
   return db.transaction(() => {
     const sale = db.prepare('SELECT * FROM sales WHERE id = ?').get(saleId);
     if (!sale) throw new Error('Sale not found');
@@ -33,6 +38,9 @@ function create({ userId, saleId, reason = '', items = [] }) {
       VALUES (?, ?, ?, ?)
     `);
     const stockStmt = db.prepare('UPDATE products SET stockQty = stockQty + ?, updatedAt = ? WHERE id = ?');
+    const batchStmt = hasBatchCol
+      ? db.prepare('UPDATE product_batches SET stockQty = stockQty + ?, updatedAt = ? WHERE id = ?')
+      : null;
 
     for (const it of items) {
       const qty = Number(it.qty || 0);
@@ -47,9 +55,28 @@ function create({ userId, saleId, reason = '', items = [] }) {
 
       itemStmt.run(returnId, it.productId, qty, refund);
       stockStmt.run(qty, now, it.productId);
+      if (batchStmt && saleItem.batchId) {
+        batchStmt.run(qty, now, saleItem.batchId);
+      }
     }
 
     db.prepare('UPDATE returns SET refundTotal = ? WHERE id = ?').run(refundTotal, returnId);
+
+    // Credit settlement — reduce customer balance + ledger + sale amountPaid
+    if (refundTotal > 0 && sale.customerId && hasBalance && hasLedgerCol) {
+      const cust = db.prepare('SELECT balance FROM customers WHERE id = ?').get(sale.customerId);
+      if (cust) {
+        const newBal = Math.max(0, Number(cust.balance || 0) - refundTotal);
+        db.prepare('UPDATE customers SET balance = ?, updatedAt = ? WHERE id = ?').run(newBal, now, sale.customerId);
+        db.prepare('INSERT INTO customer_ledger (customerId,billId,type,debit,credit,balance,note,createdAt) VALUES (?,?,?,?,?,?,?,?)')
+          .run(sale.customerId, saleId, 'RETURN', 0, Math.round(refundTotal * 100) / 100, newBal, reason || 'Return', now);
+        if (hasPaidCol) {
+          const newPaid = Math.max(0, Number(sale.amountPaid || 0) - refundTotal);
+          db.prepare('UPDATE sales SET amountPaid = ?, balanceDue = ?, updatedAt = ? WHERE id = ?')
+            .run(newPaid, Math.max(0, sale.grandTotal - newPaid), now, saleId);
+        }
+      }
+    }
 
     return db.prepare('SELECT * FROM returns WHERE id = ?').get(returnId);
   })();

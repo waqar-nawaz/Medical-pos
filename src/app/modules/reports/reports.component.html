@@ -203,3 +203,138 @@
     </div>
   </div>
 </div>
+
+<!-- Inventory Valuation -->
+<div class="card chart-card">
+  <div class="card-head">
+    <div class="card-title">📊 Inventory Valuation</div>
+    <div class="card-subtitle" *ngIf="invValuation.length">Total valuation ₹{{ invValuationTotal() | number:'1.2-2' }}</div>
+    <button class="btn btn-outline" (click)="exportInventoryValuationCsv()">Export CSV</button>
+  </div>
+  <div class="table-responsive">
+    <table class="data-table" *ngIf="invValuation.length > 0">
+      <thead>
+        <tr><th>Product</th><th>Category</th><th>Stock</th><th>Cost (₹)</th><th class="align-right">Valuation</th><th class="align-right">Potential Revenue</th></tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let r of invValuation">
+          <td>{{ r.name }}</td>
+          <td><span class="badge badge-category">{{ r.category || 'General' }}</span></td>
+          <td>{{ r.stockQty }}</td>
+          <td>₹{{ r.cost | number:'1.2-2' }}</td>
+          <td class="align-right"><span class="price">₹{{ r.valuation | number:'1.2-2' }}</span></td>
+          <td class="align-right">₹{{ r.potentialRevenue | number:'1.2-2' }}</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="empty-row" *ngIf="invValuation.length === 0"><p>No inventory data</p></div>
+  </div>
+</div>
+
+<!-- Stock Movement -->
+<div class="card chart-card">
+  <div class="card-head">
+    <div class="card-title">🔄 Stock Movement</div>
+    <div class="card-subtitle">Audit trail of stock changes in period</div>
+    <button class="btn btn-outline" (click)="exportStockMovementCsv()">Export CSV</button>
+  </div>
+  <div class="table-responsive">
+    <table class="data-table" *ngIf="stockMovement.length > 0">
+      <thead>
+        <tr><th>Date</th><th>Product</th><th>Change</th><th>Reason</th><th>Note</th><th>By</th></tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let r of stockMovement">
+          <td>{{ r.createdAt | date:'dd MMM yyyy, h:mm a' }}</td>
+          <td>{{ r.productName }}</td>
+          <td><span class="badge" [ngClass]="r.qtyChange >= 0 ? 'chip-green' : 'chip-red'">{{ r.qtyChange >= 0 ? '+' : '' }}{{ r.qtyChange }}</span></td>
+          <td>{{ r.reason }}</td>
+          <td>{{ r.note || '—' }}</td>
+          <td>{{ r.userName || '—' }}</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="empty-row" *ngIf="stockMovement.length === 0"><p>No stock movement in period</p></div>
+  </div>
+</div>
+
+<!-- Sales by Cashier -->
+<div class="card chart-card">
+  <div class="card-head">
+    <div class="card-title">👤 Sales by Cashier</div>
+    <div class="card-subtitle">Performance per user in period</div>
+    <button class="btn btn-outline" (click)="exportSalesByCashierCsv()">Export CSV</button>
+  </div>
+  <div class="table-responsive">
+    <table class="data-table" *ngIf="salesByCashier.length > 0">
+      <thead>
+        <tr><th>Cashier</th><th>Email</th><th class="align-right">Sales Count</th><th class="align-right">Revenue</th></tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let r of salesByCashier">
+          <td>{{ r.userName || '—' }}</td>
+          <td>{{ r.email || '—' }}</td>
+          <td class="align-right">{{ r.salesCount }}</td>
+          <td class="align-right"><span class="price">₹{{ r.revenue | number:'1.2-2' }}</span></td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="empty-row" *ngIf="salesByCashier.length === 0"><p>No sales in period</p></div>
+  </div>
+</div>
+
+<!-- GST Reports -->
+<div class="gst-report-grid">
+  <div class="card chart-card">
+    <div class="card-head">
+      <div class="card-title">📋 GSTR-1 (Outward Supplies)</div>
+      <div class="card-subtitle">Rate-wise summary</div>
+      <button class="btn btn-outline" (click)="exportGstr1Csv()">Export CSV</button>
+    </div>
+    <div class="table-responsive">
+      <table class="data-table" *ngIf="gstr1.length > 0">
+        <thead>
+          <tr><th>GST %</th><th class="align-right">Invoices</th><th class="align-right">Qty</th><th class="align-right">Taxable Value</th><th class="align-right">GST</th><th class="align-right">CGST</th><th class="align-right">SGST</th></tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let r of gstr1">
+            <td>{{ r.gstRate }}%</td>
+            <td class="align-right">{{ r.invoiceCount }}</td>
+            <td class="align-right">{{ r.qty }}</td>
+            <td class="align-right">₹{{ r.taxableValue | number:'1.2-2' }}</td>
+            <td class="align-right">₹{{ r.gstCollected | number:'1.2-2' }}</td>
+            <td class="align-right">₹{{ r.cgst | number:'1.2-2' }}</td>
+            <td class="align-right">₹{{ r.sgst | number:'1.2-2' }}</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="empty-row" *ngIf="gstr1.length === 0"><p>No tax data in period</p></div>
+    </div>
+  </div>
+
+  <div class="card chart-card">
+    <div class="card-head">
+      <div class="card-title">📄 GSTR-3B (Monthly)</div>
+      <div class="card-subtitle">Monthly tax liabilities</div>
+      <button class="btn btn-outline" (click)="exportGstr3bCsv()">Export CSV</button>
+    </div>
+    <div class="table-responsive">
+      <table class="data-table" *ngIf="gstr3b.length > 0">
+        <thead>
+          <tr><th>Month</th><th class="align-right">Invoices</th><th class="align-right">Turnover</th><th class="align-right">Taxable</th><th class="align-right">CGST</th><th class="align-right">SGST</th></tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let r of gstr3b">
+            <td>{{ r.month }}</td>
+            <td class="align-right">{{ r.invoiceCount }}</td>
+            <td class="align-right">₹{{ r.turnover | number:'1.2-2' }}</td>
+            <td class="align-right">₹{{ r.taxableValue | number:'1.2-2' }}</td>
+            <td class="align-right">₹{{ r.cgst | number:'1.2-2' }}</td>
+            <td class="align-right">₹{{ r.sgst | number:'1.2-2' }}</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="empty-row" *ngIf="gstr3b.length === 0"><p>No monthly data in period</p></div>
+    </div>
+  </div>
+</div>

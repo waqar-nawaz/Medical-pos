@@ -21,6 +21,14 @@ const productSchema = z.object({
   unitsPerStrip:   z.number().int().min(1).default(1),
   stripsPerBox:    z.number().int().min(1).default(1),
   packagingUnit:   z.enum(['unit','strip','box']).default('unit'),
+  trackBatches:    z.boolean().optional().default(false),
+});
+
+const batchSchema = z.object({
+  batchNo: z.string().optional().nullable(),
+  expiryDate: z.string().optional().nullable(),
+  qty: z.number().int().positive(),
+  cost: z.number().nonnegative().optional().default(0),
 });
 
 const stockSchema = z.object({
@@ -109,4 +117,16 @@ function remove(req, res) {
   res.json({ ok: true });
 }
 
-module.exports = { list, get, scan, create, update, updateStock, remove };
+function listBatches(req, res) {
+  const id = Number(req.params.id);
+  res.json({ ok: true, data: Product.listBatches(id) });
+}
+
+function addBatch(req, res) {
+  const id = Number(req.params.id);
+  const data = batchSchema.parse(req.body);
+  const row = Product.addBatch({ productId: id, ...data });
+  res.status(201).json({ ok: true, data: row });
+}
+
+module.exports = { list, get, scan, create, update, updateStock, remove, listBatches, addBatch };

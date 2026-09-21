@@ -44,6 +44,26 @@ function expiryReport(req, res) {
   res.json({ ok: true, data: Reports.expiryReport({ days: Number(req.query.days || 90) }) });
 }
 
+function inventoryValuation(req, res) {
+  res.json({ ok: true, data: Reports.inventoryValuation() });
+}
+
+function stockMovementReport(req, res) {
+  res.json({ ok: true, data: Reports.stockMovementReport(periodParams(req)) });
+}
+
+function salesByCashier(req, res) {
+  res.json({ ok: true, data: Reports.salesByCashier(periodParams(req)) });
+}
+
+function gstGstr1(req, res) {
+  res.json({ ok: true, data: Reports.gstGstr1(periodParams(req)) });
+}
+
+function gstGstr3b(req, res) {
+  res.json({ ok: true, data: Reports.gstGstr3b(periodParams(req)) });
+}
+
 module.exports = {
   summary,
   gst,
@@ -52,14 +72,14 @@ module.exports = {
   profitReport,
   lowStockReport,
   expiryReport,
-  inventoryValuation: placeholder('inventoryValuation'),
+  inventoryValuation,
+  stockMovementReport,
+  salesByCashier,
+  gstGstr1,
+  gstGstr3b,
   salesByDay: placeholder('salesByDay'),
-  salesByCashier: placeholder('salesByCashier'),
   customerLoyaltyReport: placeholder('customerLoyaltyReport'),
   returnsReport: placeholder('returnsReport'),
   purchaseOrdersReport: placeholder('purchaseOrdersReport'),
-  gstGstr1: placeholder('gstGstr1'),
-  gstGstr3b: placeholder('gstGstr3b'),
   supplierLedger: placeholder('supplierLedger'),
-  stockMovementReport: placeholder('stockMovementReport'),
 };

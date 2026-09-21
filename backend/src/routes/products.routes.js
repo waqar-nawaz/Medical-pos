@@ -5,6 +5,8 @@ const { auth, requirePermission } = require('../middlewares/auth.middleware');
 
 router.get('/', auth(true), requirePermission('products'), Ctrl.list);
 router.get('/scan/:barcode', auth(true), requirePermission('products'), Ctrl.scan);
+router.get('/:id/batches', auth(true), requirePermission('products'), Ctrl.listBatches);
+router.post('/:id/batches', auth(true), requirePermission('products'), Ctrl.addBatch);
 router.get('/:id', auth(true), requirePermission('products'), Ctrl.get);
 router.post('/', auth(true), requirePermission('products'), Ctrl.create);
 router.put('/:id', auth(true), requirePermission('products'), Ctrl.update);
