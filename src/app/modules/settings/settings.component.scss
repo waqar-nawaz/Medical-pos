@@ -2,7 +2,7 @@
 .form{ margin-top: 10px; }
 .grid2{ display:grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .full{ width: 100%; }
-.actions{ margin-top: 10px; }
+.actions{ display:flex; gap:12px; flex-wrap:wrap; margin-top: 22px; }
 @media (max-width: 900px){
   .grid2{ grid-template-columns: 1fr; }
 }
