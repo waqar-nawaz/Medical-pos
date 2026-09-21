@@ -133,6 +133,11 @@
   }
 }
 
+.charts-section + .chart-card,
+.chart-card + .chart-card {
+  margin-top: 24px;
+}
+
 .chart-card, .top-products-card {
   border-radius: 12px;
   padding: 20px;
@@ -157,7 +162,51 @@
     font-size: 13px;
     color: var(--text-muted);
   }
+
+  .card-actions {
+    margin-left: auto;
+    display: flex;
+    gap: 8px;
+  }
 }
+
+/* P&L Section */
+.pnl-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+}
+
+.pnl-cell {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  background: var(--surface);
+}
+
+.pnl-label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.pnl-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.pnl-net .pnl-value.negative {
+  color: var(--danger);
+}
+
+.pnl-net { border-color: var(--primary); }
+.pnl-net .pnl-value { color: var(--primary); }
+.pnl-net.negative { border-color: var(--danger); }
+.pnl-net.negative .pnl-value { color: var(--danger); }
 
 .chart-wrapper {
   min-height: 300px;

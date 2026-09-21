@@ -28,7 +28,11 @@ function create(req, res) {
 }
 
 function receive(req, res) {
-  res.json({ ok: true, data: PO.receive(Number(req.params.id)) });
+  res.json({ ok: true, data: PO.receive(Number(req.params.id), req.user.id) });
 }
 
-module.exports = { list, get, create, receive };
+function suggest(req, res) {
+  res.json({ ok: true, data: PO.suggest() });
+}
+
+module.exports = { list, get, create, receive, suggest };

@@ -100,3 +100,106 @@
     </canvas>
   </div>
 </div>
+
+<!-- Profit & Loss Section -->
+<div class="card chart-card" *ngIf="pnlData">
+  <div class="card-head">
+    <div class="card-title">🧮 Profit &amp; Loss</div>
+    <div class="card-subtitle">{{ from || 'Start' }} to {{ to || 'Today' }} • {{ pnlData.salesCount }} sale(s)</div>
+    <button class="btn btn-outline" (click)="exportPnl()">Export P&amp;L</button>
+  </div>
+  <div class="pnl-grid">
+    <div class="pnl-cell pnl-in">
+      <div class="pnl-label">Gross Sales</div>
+      <div class="pnl-value">₹{{ pnlData.grossSales | number:'1.2-2' }}</div>
+    </div>
+    <div class="pnl-cell pnl-out">
+      <div class="pnl-label">COGS</div>
+      <div class="pnl-value">−₹{{ pnlData.cogs | number:'1.2-2' }}</div>
+    </div>
+    <div class="pnl-cell pnl-out">
+      <div class="pnl-label">Expenses</div>
+      <div class="pnl-value">−₹{{ pnlData.expenses | number:'1.2-2' }}</div>
+    </div>
+    <div class="pnl-cell pnl-gross">
+      <div class="pnl-label">Gross Profit</div>
+      <div class="pnl-value">₹{{ pnlData.grossProfit | number:'1.2-2' }}</div>
+    </div>
+    <div class="pnl-cell pnl-net" [class.negative]="pnlData.netProfit < 0">
+      <div class="pnl-label">Net Profit</div>
+      <div class="pnl-value">₹{{ pnlData.netProfit | number:'1.2-2' }}</div>
+    </div>
+  </div>
+</div>
+
+<!-- Expenses Section -->
+<div class="card chart-card">
+  <div class="card-head">
+    <div class="card-title">💸 Expenses</div>
+    <div class="card-subtitle" *ngIf="expSummary">Total ₹{{ expSummary.total | number:'1.2-2' }} • {{ expSummary.count }} entry(ies)</div>
+    <div class="card-actions">
+      <button class="btn btn-outline" (click)="exportExpensesCsv()">Export CSV</button>
+      <button class="btn" (click)="openExpenseModal()">Add Expense</button>
+    </div>
+  </div>
+  <div class="table-responsive">
+    <table class="data-table" *ngIf="expRows.length > 0">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Category</th>
+          <th>Description</th>
+          <th class="align-right">Amount</th>
+          <th class="align-right">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let e of expRows">
+          <td>{{ e.date | date:'dd MMM yyyy' }}</td>
+          <td><span class="badge badge-category">{{ e.category }}</span></td>
+          <td>{{ e.description || '—' }}</td>
+          <td class="align-right"><span class="price">₹{{ e.amount | number:'1.2-2' }}</span></td>
+          <td class="align-right">
+            <button class="btn-icon" (click)="openExpenseModal(e)" title="Edit">✏️</button>
+            <button class="btn-icon danger" (click)="removeExpense(e)" title="Delete">🗑️</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="empty-row" *ngIf="expRows.length === 0">
+      <div style="font-size: 36px;">💸</div>
+      <p>No expenses recorded for this period</p>
+    </div>
+  </div>
+</div>
+
+<!-- Expense Modal -->
+<div class="modal-backdrop" *ngIf="expenseModalOpen" (click.self)="closeExpenseModal()">
+  <div class="modal-card" style="max-width: 460px;" role="dialog" aria-modal="true">
+    <button class="modal-close" type="button" (click)="closeExpenseModal()" aria-label="Close">&times;</button>
+    <h2>{{ editingExpense ? 'Edit Expense' : 'Add Expense' }}</h2>
+    <div class="modal-sub">Record an operating expense</div>
+    <div class="field">
+      <label>Category *</label>
+      <select [(ngModel)]="expenseForm.category">
+        <option *ngFor="let c of expenseCategories" [value]="c">{{ c }}</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Description</label>
+      <input type="text" [(ngModel)]="expenseForm.description" placeholder="e.g. July power bill" maxlength="200" />
+    </div>
+    <div class="field">
+      <label>Amount (₹) *</label>
+      <input type="number" [(ngModel)]="expenseForm.amount" min="0" step="0.01" />
+    </div>
+    <div class="field">
+      <label>Date *</label>
+      <input type="date" [(ngModel)]="expenseForm.date" />
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" (click)="closeExpenseModal()">Cancel</button>
+      <button class="btn" (click)="saveExpense()">{{ editingExpense ? 'Update Expense' : 'Add Expense' }}</button>
+    </div>
+  </div>
+</div>

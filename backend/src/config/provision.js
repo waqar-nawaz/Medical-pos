@@ -11,11 +11,29 @@ function provisionDatabase() {
   const schema = fs.readFileSync(schemaPath, 'utf8');
   db.exec(schema);
 
-  const userCols = db.prepare("PRAGMA table_info('users')").all().map(r => r.name);
-  if (!userCols.includes('permissions')) {
-    db.exec("ALTER TABLE users ADD COLUMN permissions TEXT NOT NULL DEFAULT '[]'");
-    console.log('  + users.permissions');
-  }
+  // Idempotent column/table migrations so existing databases get new fields.
+  const addCol = (table, name, def) => {
+    const cols = db.prepare(`PRAGMA table_info('${table}')`).all().map(r => r.name);
+    if (!cols.includes(name)) {
+      db.exec(`ALTER TABLE ${table} ADD COLUMN ${name} ${def};`);
+      console.log(`  + ${table}.${name}`);
+    }
+  };
+
+  addCol('users',    'permissions', "TEXT NOT NULL DEFAULT '[]'");
+  addCol('customers','balance',     'REAL NOT NULL DEFAULT 0');
+  addCol('customers','notes',       'TEXT');
+  addCol('products', 'productDiscount', 'REAL NOT NULL DEFAULT 0');
+  addCol('products', 'unitsPerStrip',   'INTEGER NOT NULL DEFAULT 1');
+  addCol('products', 'stripsPerBox',    'INTEGER NOT NULL DEFAULT 1');
+  addCol('products', 'packagingUnit',   "TEXT NOT NULL DEFAULT 'unit'");
+  addCol('sales',    'amountPaid',  'REAL NOT NULL DEFAULT 0');
+  addCol('sales',    'balanceDue',  'REAL NOT NULL DEFAULT 0');
+  addCol('sales',    'billDiscount','REAL NOT NULL DEFAULT 0');
+  addCol('sales',    'prevBalance', 'REAL NOT NULL DEFAULT 0');
+  addCol('sale_items','productDiscount','REAL NOT NULL DEFAULT 0');
+  addCol('sale_items','discountAmount', 'REAL NOT NULL DEFAULT 0');
+  addCol('sale_items','packagingUnit',  "TEXT NOT NULL DEFAULT 'unit'");
 
   const now = new Date().toISOString();
 

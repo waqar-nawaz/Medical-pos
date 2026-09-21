@@ -3,6 +3,18 @@ import { FormBuilder, Validators } from '@angular/forms';
 import { ApiService } from '../../core/services/api.service';
 import { ToastService } from '../../core/services/toast.service';
 import { ConfirmService } from '../../core/services/confirm.service';
+import { downloadCsv, stamp } from '../../core/utils/export-csv';
+
+export const ADJUST_REASONS: { value: string; label: string }[] = [
+  { value: 'RECEIVED', label: 'Received / Stock-in' },
+  { value: 'DAMAGED', label: 'Damaged' },
+  { value: 'EXPIRED', label: 'Expired' },
+  { value: 'COUNT_CORRECTION', label: 'Count Correction' },
+  { value: 'SAMPLE', label: 'Doctor Sample' },
+  { value: 'OTHER', label: 'Other' },
+];
+
+const fmtReason = (v: string) => ADJUST_REASONS.find(r => r.value === v)?.label || v;
 
 @Component({ templateUrl: './products.component.html', styleUrls: ['./products.component.scss'] })
 export class ProductsComponent implements OnInit {
@@ -22,6 +34,15 @@ export class ProductsComponent implements OnInit {
   productModalOpen = false;
   qtyModalOpen = false;
   submitted = false;
+  adjustReasons = ADJUST_REASONS;
+  adjustModalOpen = false;
+  adjustProduct: any = null;
+  adjustQty: number = 0;
+  adjustReason: string = 'COUNT_CORRECTION';
+  adjustNote: string = '';
+  adjModalOpen = false;
+  adjRows: any[] = [];
+  adjLoading = false;
   form: any;
 
   constructor(private fb: FormBuilder, private api: ApiService, private toast: ToastService, private confirm: ConfirmService) {
@@ -118,6 +139,68 @@ export class ProductsComponent implements OnInit {
   closeQtyModal() {
     this.qtyModalOpen = false;
     this.editingProduct = null;
+  }
+
+  openAdjustModal(row: any) {
+    this.adjustProduct = row;
+    this.adjustQty = 0;
+    this.adjustReason = 'COUNT_CORRECTION';
+    this.adjustNote = '';
+    this.adjustModalOpen = true;
+  }
+
+  closeAdjustModal() {
+    this.adjustModalOpen = false;
+    this.adjustProduct = null;
+  }
+
+  saveAdjust() {
+    if (!this.adjustProduct || !this.adjustQty) {
+      this.toast.warning('Enter a non-zero quantity change');
+      return;
+    }
+    const qtyChange = Number(this.adjustQty);
+    if (!Number.isInteger(qtyChange) || qtyChange === 0 || Math.abs(qtyChange) > 100000) {
+      this.toast.warning('Enter a valid non-zero whole number');
+      return;
+    }
+    this.api.post<any>(`/products/${this.adjustProduct.id}/adjust-stock`, {
+      qtyChange,
+      reason: this.adjustReason,
+      note: this.adjustNote || null,
+    }).subscribe({
+      next: () => {
+        this.toast.success('Stock adjusted successfully');
+        this.closeAdjustModal();
+        this.load();
+      },
+      error: (err) => this.toast.error(err?.error?.message || 'Failed to adjust stock'),
+    });
+  }
+
+  openAdjustHistory() {
+    this.adjModalOpen = true;
+    this.adjLoading = true;
+    this.adjRows = [];
+    this.api.get<any>('/stock-adjustments', { limit: 200 }).subscribe({
+      next: (r) => { this.adjRows = r.data || []; this.adjLoading = false; },
+      error: () => this.adjLoading = false,
+    });
+  }
+
+  closeAdjustHistory() {
+    this.adjModalOpen = false;
+  }
+
+  reasonLabel(v: string) {
+    return fmtReason(v);
+  }
+
+  exportCsv() {
+    downloadCsv(`products_${stamp()}.csv`,
+      ['Name', 'SKU', 'Barcode', 'Category', 'Shelf', 'Batch', 'Stock', 'Reorder Level', 'Price', 'Cost', 'Expiry', 'Status'],
+      this.filteredRows.map(r => [r.name, r.sku, r.barcode, r.category, r.shelf, r.batchNo, r.stockQty, r.reorderLevel, r.price, r.cost, r.expiryDate || '', this.statusLabel(r)]));
+    this.toast.success('Products exported to CSV');
   }
 
   save() {

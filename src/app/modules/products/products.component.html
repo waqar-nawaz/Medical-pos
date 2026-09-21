@@ -1,4 +1,6 @@
 <app-page-header title="Inventory Management" subtitle="Manage your medical stock">
+  <button class="btn btn-outline" (click)="exportCsv()">Export CSV</button>
+  <button class="btn btn-outline" (click)="openAdjustHistory()">Stock Adjustments</button>
   <button class="btn" (click)="openModal()">Add Medicine</button>
 </app-page-header>
 
@@ -65,6 +67,7 @@
           </td>
           <td class="align-right">
             <button class="btn-icon" (click)="openModal(r)" title="Edit">✏️</button>
+            <button class="btn-icon" (click)="openAdjustModal(r)" title="Adjust Stock">🔧</button>
             <button class="btn-icon" (click)="openQtyModal(r)" title="Update Stock">📦</button>
             <button class="btn-icon danger" (click)="remove(r)" title="Delete">🗑️</button>
           </td>
@@ -220,6 +223,82 @@
     <div class="modal-actions">
       <button class="btn btn-outline" (click)="closeQtyModal()">Cancel</button>
       <button class="btn" (click)="saveQty()">Update Quantity</button>
+    </div>
+  </div>
+</div>
+
+<!-- Adjust Stock Modal -->
+<div class="modal-backdrop" *ngIf="adjustModalOpen" (click.self)="closeAdjustModal()">
+  <div class="modal-card" style="max-width: 460px;" role="dialog" aria-modal="true">
+    <button class="modal-close" type="button" (click)="closeAdjustModal()" aria-label="Close">&times;</button>
+    <h2>Adjust Stock</h2>
+    <div class="modal-sub">{{ adjustProduct?.name }}</div>
+    <div style="margin-bottom: 18px;">
+      <div style="font-size: 13px; color: var(--text-muted);">Current Stock: <strong>{{ adjustProduct?.stockQty }}</strong> units</div>
+    </div>
+    <div class="field">
+      <label>Quantity Change *</label>
+      <input type="number" [(ngModel)]="adjustQty" step="1" placeholder="e.g. 10 or -5" />
+      <div class="field-note">Positive adds stock, negative removes stock</div>
+    </div>
+    <div class="field">
+      <label>Reason *</label>
+      <select [(ngModel)]="adjustReason">
+        <option *ngFor="let r of adjustReasons" [value]="r.value">{{ r.label }}</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Note</label>
+      <input type="text" [(ngModel)]="adjustNote" placeholder="Optional remark" maxlength="200" />
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" (click)="closeAdjustModal()">Cancel</button>
+      <button class="btn" (click)="saveAdjust()">Save Adjustment</button>
+    </div>
+  </div>
+</div>
+
+<!-- Adjustments History Modal -->
+<div class="modal-backdrop" *ngIf="adjModalOpen" (click.self)="closeAdjustHistory()">
+  <div class="modal-card modal-wide" role="dialog" aria-modal="true">
+    <button class="modal-close" type="button" (click)="closeAdjustHistory()" aria-label="Close">&times;</button>
+    <h2>Stock Adjustments</h2>
+    <div class="modal-sub">Audit trail of stock changes</div>
+    <div style="padding: 8px 0 16px;">
+      <span class="badge chip-amber">{{ adjRows.length }} record(s)</span>
+    </div>
+    <table class="data-table" *ngIf="adjRows.length > 0">
+      <thead>
+        <tr>
+          <th>Product</th>
+          <th>Change</th>
+          <th>Reason</th>
+          <th>Note</th>
+          <th>By</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let a of adjRows">
+          <td>{{ a.productName }}</td>
+          <td>
+            <span class="badge" [ngClass]="a.qtyChange >= 0 ? 'chip-green' : 'chip-red'">{{ a.qtyChange >= 0 ? '+' : '' }}{{ a.qtyChange }}</span>
+          </td>
+          <td>{{ reasonLabel(a.reason) }}</td>
+          <td>{{ a.note || '—' }}</td>
+          <td>{{ a.userName || '—' }}</td>
+          <td>{{ a.createdAt | date:'dd MMM yyyy, h:mm a' }}</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="empty-row" *ngIf="!adjLoading && adjRows.length === 0">
+      <p>No stock adjustments recorded yet</p>
+    </div>
+    <div class="empty-row" *ngIf="adjLoading">
+      <p>Loading...</p>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" (click)="closeAdjustHistory()">Close</button>
     </div>
   </div>
 </div>

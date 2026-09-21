@@ -19,6 +19,11 @@ export class PurchaseOrdersComponent implements OnInit {
   form: any;
   modalOpen = false;
 
+  suggestOpen = false;
+  suggestions: any[] = [];
+  suggestLoading = false;
+  allSuggestedSelected = false;
+
   constructor(private fb: FormBuilder, private api: ApiService, private toast: ToastService, private confirm: ConfirmService) {
     this.form = this.fb.group({
       supplierId: [null, Validators.required],
@@ -91,5 +96,31 @@ export class PurchaseOrdersComponent implements OnInit {
 
   closeModal() {
     this.modalOpen = false;
+  }
+
+  openSuggest() {
+    this.suggestOpen = true;
+    this.suggestLoading = true;
+    this.suggestions = [];
+    this.api.get<any>('/purchase-orders/suggest').subscribe({
+      next: (r) => { this.suggestions = r.data || []; this.suggestLoading = false; },
+      error: () => this.suggestLoading = false,
+    });
+  }
+
+  closeSuggest() {
+    this.suggestOpen = false;
+  }
+
+  addSuggested(item: any, all = false) {
+    const targets = all ? this.suggestions : [item];
+    for (const s of targets) {
+      this.lines.push({ productId: s.productId, qty: s.suggestQty || 1, cost: s.cost || 0 });
+    }
+    const sup = targets.find((s: any) => s.supplierId);
+    if (sup) this.form.patchValue({ supplierId: sup.supplierId });
+    this.closeSuggest();
+    this.openModal();
+    this.toast.success(`${targets.length} item(s) added to purchase order`);
   }
 }

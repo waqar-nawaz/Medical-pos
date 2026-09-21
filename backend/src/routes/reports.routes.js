@@ -5,6 +5,7 @@ const { auth, requirePermission } = require('../middlewares/auth.middleware');
 router.get('/summary', auth(true), requirePermission('reports'), Ctrl.summary);
 router.get('/top-products', auth(true), requirePermission('reports'), Ctrl.topProducts);
 router.get('/gst', auth(true), requirePermission('reports'), Ctrl.gst);
+router.get('/pnl', auth(true), requirePermission('reports'), Ctrl.pnl);
 
 // 15+ endpoints (placeholders included)
 router.get('/inventory-valuation', auth(true), requirePermission('reports'), Ctrl.inventoryValuation);

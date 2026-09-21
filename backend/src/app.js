@@ -21,6 +21,8 @@ const settingsRoutes = require('./routes/settings.routes');
 const returnsRoutes = require('./routes/returns.routes');
 const poRoutes = require('./routes/purchase-orders.routes');
 const whatsappRoutes = require('./routes/whatsapp.routes');
+const stockAdjustmentRoutes = require('./routes/stock-adjustments.routes');
+const expenseRoutes = require('./routes/expenses.routes');
 
 function createApp() {
   const app = express();
@@ -51,6 +53,8 @@ function createApp() {
   app.use('/api/reports', reportsRoutes);
   app.use('/api/settings', settingsRoutes);
   app.use('/api/whatsapp', whatsappRoutes);
+  app.use('/api/stock-adjustments', stockAdjustmentRoutes);
+  app.use('/api/expenses', expenseRoutes);
 
   // 404
   app.use((_req, res) => res.status(404).json({ ok: false, error: { message: 'Not Found' } }));

@@ -42,6 +42,8 @@ CREATE TABLE IF NOT EXISTS customers (
   email TEXT,
   address TEXT,
   loyaltyPoints INTEGER NOT NULL DEFAULT 0,
+  balance REAL NOT NULL DEFAULT 0,
+  notes TEXT,
   createdAt TEXT NOT NULL,
   updatedAt TEXT NOT NULL
 );
@@ -64,7 +66,11 @@ CREATE TABLE IF NOT EXISTS products (
   isActive INTEGER NOT NULL DEFAULT 1,
   createdAt TEXT NOT NULL,
   updatedAt TEXT NOT NULL,
-  shelf	TEXT,
+  shelf TEXT,
+  productDiscount REAL NOT NULL DEFAULT 0,
+  unitsPerStrip INTEGER NOT NULL DEFAULT 1,
+  stripsPerBox INTEGER NOT NULL DEFAULT 1,
+  packagingUnit TEXT NOT NULL DEFAULT 'unit',
   FOREIGN KEY (supplierId) REFERENCES suppliers(id) ON DELETE SET NULL
 );
 
@@ -85,6 +91,10 @@ CREATE TABLE IF NOT EXISTS sales (
   createdAt TEXT NOT NULL,
   updatedAt TEXT NOT NULL,
   totalItems INTEGER NOT NULL DEFAULT 0,
+  amountPaid REAL NOT NULL DEFAULT 0,
+  balanceDue REAL NOT NULL DEFAULT 0,
+  billDiscount REAL NOT NULL DEFAULT 0,
+  prevBalance REAL NOT NULL DEFAULT 0,
   FOREIGN KEY (userId) REFERENCES users(id),
   FOREIGN KEY (customerId) REFERENCES customers(id) ON DELETE SET NULL
 );
@@ -98,6 +108,9 @@ CREATE TABLE IF NOT EXISTS sale_items (
   gstRate REAL NOT NULL,
   gstAmount REAL NOT NULL,
   lineTotal REAL NOT NULL,
+  productDiscount REAL NOT NULL DEFAULT 0,
+  discountAmount REAL NOT NULL DEFAULT 0,
+  packagingUnit TEXT NOT NULL DEFAULT 'unit',
   FOREIGN KEY (saleId) REFERENCES sales(id) ON DELETE CASCADE,
   FOREIGN KEY (productId) REFERENCES products(id)
 );
@@ -146,3 +159,46 @@ CREATE TABLE IF NOT EXISTS purchase_order_items (
   FOREIGN KEY (purchaseOrderId) REFERENCES purchase_orders(id) ON DELETE CASCADE,
   FOREIGN KEY (productId) REFERENCES products(id)
 );
+
+CREATE TABLE IF NOT EXISTS customer_ledger (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  customerId INTEGER NOT NULL,
+  billId INTEGER,
+  type TEXT NOT NULL CHECK (type IN ('SALE','PAYMENT','RETURN','ADJUSTMENT')),
+  debit REAL NOT NULL DEFAULT 0,
+  credit REAL NOT NULL DEFAULT 0,
+  balance REAL NOT NULL DEFAULT 0,
+  note TEXT,
+  createdAt TEXT NOT NULL,
+  FOREIGN KEY (customerId) REFERENCES customers(id) ON DELETE CASCADE,
+  FOREIGN KEY (billId) REFERENCES sales(id) ON DELETE SET NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_customer_ledger_customer ON customer_ledger(customerId);
+
+CREATE TABLE IF NOT EXISTS stock_adjustments (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  productId INTEGER NOT NULL,
+  userId INTEGER NOT NULL,
+  qtyChange INTEGER NOT NULL,
+  reason TEXT NOT NULL,
+  note TEXT,
+  createdAt TEXT NOT NULL,
+  FOREIGN KEY (productId) REFERENCES products(id) ON DELETE CASCADE,
+  FOREIGN KEY (userId) REFERENCES users(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_stock_adjustments_product ON stock_adjustments(productId);
+
+CREATE TABLE IF NOT EXISTS expenses (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  category TEXT NOT NULL,
+  description TEXT,
+  amount REAL NOT NULL,
+  date TEXT NOT NULL,
+  userId INTEGER NOT NULL,
+  createdAt TEXT NOT NULL,
+  FOREIGN KEY (userId) REFERENCES users(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_expenses_date ON expenses(date);

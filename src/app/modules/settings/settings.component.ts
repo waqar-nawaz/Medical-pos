@@ -53,4 +53,26 @@ export class SettingsComponent implements OnInit {
       complete: () => (this.loading = false),
     });
   }
+
+  downloadBackup() {
+    this.loading = true;
+    this.api.download('/settings/backup').subscribe({
+      next: (blob: Blob) => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `medical_pos_backup_${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.sqlite`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        this.loading = false;
+        this.toast.success('Backup downloaded');
+      },
+      error: (err) => {
+        this.loading = false;
+        this.toast.error(err?.error?.message || 'Failed to download backup');
+      },
+    });
+  }
 }

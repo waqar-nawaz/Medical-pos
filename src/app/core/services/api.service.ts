@@ -24,4 +24,8 @@ export class ApiService {
   patch<T>(path: string, body?: any) {
     return this.http.patch<T>(`${this.base}${path}`, body);
   }
+
+  download(path: string) {
+    return this.http.get(`${this.base}${path}`, { responseType: 'blob' });
+  }
 }

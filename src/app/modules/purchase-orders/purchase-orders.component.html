@@ -1,4 +1,7 @@
 <app-page-header title="Purchase Orders" subtitle="Create purchase orders and receive stock">
+  <button class="btn btn-outline" (click)="openSuggest()">
+    ⚠️ Low Stock Suggestions
+  </button>
   <button class="btn" (click)="openModal()">
     ➕ Add Purchase Orders
   </button>
@@ -71,6 +74,57 @@
       <button class="btn btn-outline" (click)="closeModal()">Cancel</button>
       <button class="btn btn-outline" (click)="addLine()">➕ Add line</button>
       <button class="btn" (click)="create()">💾 Create</button>
+    </div>
+  </div>
+</div>
+
+<!-- Low Stock Suggestions Modal -->
+<div class="modal-backdrop" *ngIf="suggestOpen" (click.self)="closeSuggest()">
+  <div class="modal-card modal-wide" role="dialog" aria-modal="true">
+    <button class="modal-close" type="button" (click)="closeSuggest()" aria-label="Close">&times;</button>
+    <h2>⚠️ Low Stock Suggestions</h2>
+    <div class="modal-sub" style="margin-bottom: 12px;">
+      Items at or below their reorder level — suggested reorder quantities shown. Use
+      <b>Add All</b> to build a purchase order.
+    </div>
+    <div style="padding-bottom: 14px;">
+      <button class="btn" (click)="addSuggested(null, true)" [disabled]="!suggestions.length" *ngIf="!suggestLoading">
+        ➕ Add All ({{ suggestions.length }})
+      </button>
+    </div>
+    <table class="data-table" *ngIf="!suggestLoading && suggestions.length > 0">
+      <thead>
+        <tr>
+          <th>Product</th>
+          <th>Stock</th>
+          <th>Reorder</th>
+          <th>Suggested Qty</th>
+          <th>Supplier</th>
+          <th class="align-right">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let s of suggestions">
+          <td>{{ s.name }}</td>
+          <td><span class="badge" [ngClass]="s.status === 'Out of Stock' ? 'chip-red' : 'chip-amber'">{{ s.stockQty }}</span></td>
+          <td>{{ s.reorderLevel }}</td>
+          <td><b>{{ s.suggestQty }}</b></td>
+          <td>{{ s.supplierName || '—' }}</td>
+          <td class="align-right">
+            <button class="btn btn-sm" (click)="addSuggested(s)">Add</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="empty-row" *ngIf="!suggestLoading && suggestions.length === 0">
+      <div style="font-size: 36px;">✅</div>
+      <p>All items are above their reorder level</p>
+    </div>
+    <div class="empty-row" *ngIf="suggestLoading">
+      <p>Loading suggestions...</p>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" (click)="closeSuggest()">Close</button>
     </div>
   </div>
 </div>

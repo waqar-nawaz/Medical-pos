@@ -1,4 +1,7 @@
+const path = require('path');
 const { z } = require('zod');
+const { config } = require('../config/env');
+const { copyDb } = require('../services/backup.service');
 const Settings = require('../models/settings.model');
 
 const schema = z.object({
@@ -20,4 +23,9 @@ function update(req, res) {
   res.json({ ok: true, data: Settings.upsert(data) });
 }
 
-module.exports = { get, update };
+function backup(req, res) {
+  const dest = copyDb(config.dbPath, path.join(config.backupDir, 'manual'));
+  res.download(dest, `medical_pos_backup_${Date.now()}.sqlite`);
+}
+
+module.exports = { get, update, backup };

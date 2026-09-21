@@ -1,6 +1,13 @@
 import { Component, OnInit } from '@angular/core';
 import { ChartConfiguration } from 'chart.js';
 import { ApiService } from '../../core/services/api.service';
+import { ToastService } from '../../core/services/toast.service';
+import { downloadCsv, stamp, today } from '../../core/utils/export-csv';
+
+export const EXPENSE_CATEGORIES = [
+  'Rent', 'Salaries', 'Electricity', 'Water', 'Internet & Phone', 'Packaging & Supplies',
+  'Transport', 'Repairs & Maintenance', 'Licenses & Tax', 'Marketing', 'Miscellaneous',
+];
 
 @Component({
   templateUrl: './reports.component.html',
@@ -12,6 +19,20 @@ export class ReportsComponent implements OnInit {
   activePeriod: 'today' | 'week' | 'month' | 'custom' = 'month';
   summary: any = null;
   gstRows: any[] = [];
+
+  // Expenses & P&L
+  expenseCategories = EXPENSE_CATEGORIES;
+  pnlData: any = null;
+  expRows: any[] = [];
+  expSummary: any = null;
+  expenseModalOpen = false;
+  editingExpense: any = null;
+  expenseForm = {
+    category: 'Miscellaneous',
+    description: '',
+    amount: 0,
+    date: today(),
+  };
 
   // Charts data
   revenueChartData?: ChartConfiguration<'line'>['data'];
@@ -152,7 +173,7 @@ export class ReportsComponent implements OnInit {
     }
   };
 
-  constructor(private api: ApiService) {
+  constructor(private api: ApiService, private toast: ToastService) {
     this.setPeriod('month', false);
   }
 
@@ -278,6 +299,98 @@ export class ReportsComponent implements OnInit {
         }]
       };
     });
+
+    // Load P&L
+    this.api.get<any>('/reports/pnl', params).subscribe(r => {
+      this.pnlData = r.data;
+    });
+
+    // Load expenses
+    this.api.get<any>('/expenses', params).subscribe(r => {
+      this.expRows = r.data || [];
+    });
+    this.api.get<any>('/expenses/summary', params).subscribe(r => {
+      this.expSummary = r.data;
+    });
+  }
+
+  openExpenseModal(row?: any) {
+    this.editingExpense = row || null;
+    this.expenseForm = row
+      ? { category: row.category, description: row.description || '', amount: Number(row.amount), date: (row.date || today()).slice(0, 10) }
+      : { category: 'Miscellaneous', description: '', amount: 0, date: today() };
+    this.expenseModalOpen = true;
+  }
+
+  closeExpenseModal() {
+    this.expenseModalOpen = false;
+    this.editingExpense = null;
+  }
+
+  saveExpense() {
+    const body = {
+      category: this.expenseForm.category,
+      description: this.expenseForm.description,
+      amount: Number(this.expenseForm.amount),
+      date: this.expenseForm.date,
+    };
+    if (!body.category || !body.date || !(body.amount > 0)) {
+      this.toast.warning('Enter a category, valid amount and date');
+      return;
+    }
+    const req = this.editingExpense
+      ? this.api.put<any>(`/expenses/${this.editingExpense.id}`, body)
+      : this.api.post<any>('/expenses', body);
+    req.subscribe({
+      next: () => {
+        this.toast.success(this.editingExpense ? 'Expense updated' : 'Expense added');
+        this.closeExpenseModal();
+        this.loadExpenses();
+      },
+      error: (err) => this.toast.error(err?.error?.message || 'Failed to save expense'),
+    });
+  }
+
+  async removeExpense(row: any) {
+    if (!confirm(`Delete this ${row.category} expense of ₹${row.amount}?`)) return;
+    this.api.delete<any>(`/expenses/${row.id}`).subscribe({
+      next: () => { this.toast.success('Expense deleted'); this.loadExpenses(); },
+      error: (err) => this.toast.error(err?.error?.message || 'Failed to delete expense'),
+    });
+  }
+
+  loadExpenses() {
+    const params: any = {};
+    if (this.from) params.from = this.from;
+    if (this.to) params.to = this.to;
+    this.api.get<any>('/expenses', params).subscribe(r => this.expRows = r.data || []);
+    this.api.get<any>('/expenses/summary', params).subscribe(r => this.expSummary = r.data);
+    this.api.get<any>('/reports/pnl', params).subscribe(r => this.pnlData = r.data);
+  }
+
+  exportExpensesCsv() {
+    downloadCsv(`expenses_${stamp()}.csv`,
+      ['Date', 'Category', 'Description', 'Amount'],
+      this.expRows.map(e => [e.date, e.category, e.description || '', e.amount]));
+    this.toast.success('Expenses exported to CSV');
+  }
+
+  exportPnl() {
+    const p = this.pnlData || {} as any;
+    downloadCsv(`pnl_${stamp()}.csv`,
+      ['Metric', 'Value'],
+      [
+        ['Period', `${this.from || '…'} to ${this.to || '…'}`],
+        ['Sales Count', p.salesCount || 0],
+        ['Gross Sales', p.grossSales || 0],
+        ['GST Collected', p.gstCollected || 0],
+        ['Net Sales', p.netSales || 0],
+        ['COGS', p.cogs || 0],
+        ['Gross Profit', p.grossProfit || 0],
+        ['Expenses', p.expenses || 0],
+        ['Net Profit', p.netProfit || 0],
+      ]);
+    this.toast.success('P&L exported to CSV');
   }
 
   aggregateByDate(sales: any[]) {

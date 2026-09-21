@@ -21,16 +21,40 @@ function placeholder(name) {
   return (req, res) => res.json({ ok: true, data: Reports[name]() });
 }
 
+function periodParams(req) {
+  return {
+    from: req.query.from ? String(req.query.from) : null,
+    to: req.query.to ? String(req.query.to) : null,
+  };
+}
+
+function pnl(req, res) {
+  res.json({ ok: true, data: Reports.pnl(periodParams(req)) });
+}
+
+function profitReport(req, res) {
+  res.json({ ok: true, data: Reports.profitReport(periodParams(req)) });
+}
+
+function lowStockReport(req, res) {
+  res.json({ ok: true, data: Reports.lowStockReport() });
+}
+
+function expiryReport(req, res) {
+  res.json({ ok: true, data: Reports.expiryReport({ days: Number(req.query.days || 90) }) });
+}
+
 module.exports = {
   summary,
   gst,
   topProducts,
+  pnl,
+  profitReport,
+  lowStockReport,
+  expiryReport,
   inventoryValuation: placeholder('inventoryValuation'),
   salesByDay: placeholder('salesByDay'),
   salesByCashier: placeholder('salesByCashier'),
-  profitReport: placeholder('profitReport'),
-  lowStockReport: placeholder('lowStockReport'),
-  expiryReport: placeholder('expiryReport'),
   customerLoyaltyReport: placeholder('customerLoyaltyReport'),
   returnsReport: placeholder('returnsReport'),
   purchaseOrdersReport: placeholder('purchaseOrdersReport'),
