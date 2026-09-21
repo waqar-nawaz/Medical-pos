@@ -115,12 +115,17 @@ export class UsersComponent implements OnInit {
 
   openModal(row?: any) {
     this.editing = row ?? null;
+    const pw = this.form.controls.password;
     if (row) {
       this.form.patchValue({ name: row.name, email: row.email, password: '', role: row.role });
       this.editPerms = row.role === 'admin' ? this.allPermKeys() : [...(row.permissions || [])];
+      pw.clearValidators();
+      pw.updateValueAndValidity();
     } else {
       this.form.reset({ name: '', email: '', password: '', role: 'cashier' });
       this.editPerms = this.defaultPermissions('cashier');
+      pw.setValidators([Validators.required, Validators.minLength(6)]);
+      pw.updateValueAndValidity();
     }
     this.userModalOpen = true;
   }
